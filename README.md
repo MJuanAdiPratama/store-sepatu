@@ -44,8 +44,8 @@
 
 12. Akun Admin nya :
 
-    * Username : admin
-    * Password : 12345
+* Username : admin
+* Password : 12345
 
 13. Fitur Admin :
 
