@@ -1,6 +1,6 @@
 ## README QxuanStore - Toko Sepatu
 
-## Deskripi
+## Deskripsi
   QxuanStore Toko Sepatu adalah website e-commerce yang digunakan untuk menjual produk sepatu
 
 # Cara Menggunakan atau Instalasi Website ini :
