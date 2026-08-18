@@ -29,17 +29,6 @@
             </div>
         </header>
 
-        <!-- Search Bar -->
-        <div class="search">
-            <div class="container">
-                <form action="product.php">
-                    <input type="text" name="search" placeholder="Search Product" value="<?php echo $_GET['search'] ?>">
-                    <input type="hidden" name="kat" value="<?php echo $_GET['kat'] ?>">
-                    <input type="submit" name="Search" value="Search">
-                </form>
-            </div>
-        </div>
-
         <!-- Product Detail -->
         <div class="section">
             <div class="container">

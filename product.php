@@ -22,7 +22,6 @@
             <h1><a href="index.php">QxuanStore</a></h1>
             <ul>
                 <li><a href="product.php">Product</a></li>
-                <li><a href="login.php">logout</a></li>
             </ul>
             </div>
         </header>
@@ -38,33 +37,42 @@
             </div>
         </div>
 
-
         <!-- product -->
         <div class="section">
              <div class="container">
                 <h3>Product</h3>
                 <div class="box">
                 <?php 
-                if($_GET['search'] != '' || $_GET['kat'] != ''){
-                    $where = "AND nama_produk LIKE '%".$_GET['search']."%' AND id_category LIKE '%".$_GET['kat']."%' And id_category LIKE '%".$_GET['kat']."%'" ;
+                $where = "";
+
+                $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : "";
+                $kat    = isset($_GET['kat']) ? mysqli_real_escape_string($conn, $_GET['kat']) : "";
+
+                if ($search != '' || $kat != '') {
+                    $where = "AND nama_produk LIKE '%$search%' AND id_category LIKE '%$kat%'";
                 }
 
-                    $product = mysqli_query($conn, "SELECT * FROM tb_produk WHERE status_produk = 1 $where ORDER BY id_produk DESC");
-                    if(mysqli_num_rows($product) > 0){
-                        while($p = mysqli_fetch_array($product)){
+                $product = mysqli_query($conn, "SELECT * FROM tb_produk WHERE status_produk = 1 $where ORDER BY id_produk DESC");
+
+                if (mysqli_num_rows($product) > 0) {
+                    while ($p = mysqli_fetch_array($product)) {
                 ?>
-                <a href="detail-product.php?id=<?php echo $p ['id_produk'] ?>">
-                <div class="col-4">
-                    <img src="product/<?php echo $p['image_produk'] ?>">
-                    <p class="nama"><?php echo substr($p['nama_produk'], 0, 30)  ?></p>
-                    <p class="harga">Rp. <?php echo number_format($p['harga_produk']) ?></p>
-                </div>
+                <a href="detail-product.php?id=<?php echo $p['id_produk'] ?>">
+                    <div class="col-4">
+                        <img src="product/<?php echo $p['image_produk'] ?>">
+                        <p class="nama"><?php echo substr($p['nama_produk'], 0, 30) ?></p>
+                        <p class="harga">Rp. <?php echo number_format($p['harga_produk']) ?></p>
+                    </div>
                 </a>
-            <?php }}else{ ?>
-                <p>Product Not Found</p>
-            <?php } ?>
-             </div>
+                <?php 
+                    }
+                } else { 
+                ?>
+                    <p>Product Not Found</p>
+                <?php } ?>
+            </div>
         </div>
+</div>
 
         <!-- Footer -->
         <div class="footer">

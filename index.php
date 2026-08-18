@@ -21,7 +21,6 @@
             <h1><a href="index.php">QxuanStore</a></h1>
             <ul>
                 <li><a href="product.php">Product</a></li>
-                <li><a href="login.php">Logout</a></li>
             </ul>
             </div>
         </header>
@@ -78,10 +77,11 @@
                 </div>
                 </a>
             <?php }}else{ ?>
-                <p>Prodcut Not Found</p>
+                <p>Product Not Found</p>
             <?php } ?>
              </div>
         </div>
+    </div>
 
         <!-- Footer -->
         <div class="footer">
