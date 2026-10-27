@@ -1,8 +1,9 @@
 <?php
-    $hostname ='localhost';
-    $username = 'root';
-    $password = '';
-    $dbname = 'db_bukawarung';
+/**
+ * Root Database Loader (Backward Compatible)
+ * Redirects to config/database.php and loads helpers
+ */
 
-    $conn = mysqli_connect($hostname, $username, $password, $dbname) or die ('Failed To Connect To Database')
-?>
+require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/config/helpers.php';
+require_once __DIR__ . '/config/session.php';

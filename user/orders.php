@@ -1,0 +1,168 @@
+<?php
+/**
+ * Customer Order History Page - QxuanStore
+ * Modern Shoe E-Commerce (User Area)
+ */
+
+$rootPath = dirname(__DIR__);
+require_once $rootPath . '/config/database.php';
+require_once $rootPath . '/config/helpers.php';
+require_once $rootPath . '/config/session.php';
+
+require_user();
+
+$userId = $_SESSION['user_id'];
+$userData = db_fetch_one("SELECT * FROM tb_user WHERE user_id = ?", [$userId]);
+
+$orders = db_fetch_all("SELECT * FROM tb_order WHERE user_id = ? ORDER BY id_order DESC", [$userId]);
+
+$pageTitle = 'Riwayat Pesanan Saya';
+require_once $rootPath . '/includes/header.php';
+?>
+
+<div class="container" style="padding-top: 40px; padding-bottom: 70px;">
+    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start;">
+        <!-- Customer Sidebar -->
+        <div style="background: #fff; padding: 26px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm); position: sticky; top: 100px;">
+            <div style="text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9;">
+                <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; margin: 0 auto 12px; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
+                    <?= strtoupper(substr($userData->nama_lengkap, 0, 1)) ?>
+                </div>
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin-bottom: 4px;"><?= htmlspecialchars($userData->nama_lengkap) ?></h3>
+                <small style="color: #64748b; font-size: 0.85rem; word-break: break-all;"><?= htmlspecialchars($userData->email) ?></small>
+            </div>
+
+            <!-- Sidebar Links -->
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px;">
+                <li>
+                    <a href="<?= user_url('profile.php') ?>" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; font-weight: 600; color: #475569; font-size: 0.92rem;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                        <i class="fa-solid fa-user"></i> Profil & Alamat
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= user_url('orders.php') ?>" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; font-weight: 700; background: #2563eb; color: #fff; font-size: 0.92rem;">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Pesanan
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= user_url('cart.php') ?>" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; font-weight: 600; color: #475569; font-size: 0.92rem;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                        <i class="fa-solid fa-cart-shopping"></i> Keranjang Belanja
+                    </a>
+                </li>
+                <li style="border-top: 1px solid #f1f5f9; margin-top: 10px; padding-top: 10px;">
+                    <a href="javascript:void(0)" onclick="confirmUserLogout()" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; font-weight: 600; color: #ef4444; font-size: 0.92rem;">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar Akun
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Orders List Card -->
+        <div style="background: #fff; padding: 32px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid #f1f5f9; padding-bottom: 16px;">
+                <h1 style="font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-clock-rotate-left" style="color: #2563eb;"></i> Riwayat Pesanan Sepatu
+                </h1>
+                <span class="badge badge-info"><?= count($orders) ?> Total Pesanan</span>
+            </div>
+
+            <?php if (!empty($orders)): ?>
+                <div style="display: flex; flex-direction: column; gap: 18px;">
+                    <?php foreach ($orders as $ord): ?>
+                        <?php
+                            $badgeClass = 'badge-warning';
+                            if ($ord->status_order === 'Diproses') $badgeClass = 'badge-info';
+                            if ($ord->status_order === 'Dikirim') $badgeClass = 'badge-primary';
+                            if ($ord->status_order === 'Selesai') $badgeClass = 'badge-success';
+                            if ($ord->status_order === 'Dibatalkan') $badgeClass = 'badge-danger';
+
+                            // Fetch items
+                            $ordItems = db_fetch_all("
+                                SELECT od.*, p.image_produk 
+                                FROM tb_order_detail od 
+                                LEFT JOIN tb_produk p ON od.id_produk = p.id_produk 
+                                WHERE od.id_order = ?
+                            ", [$ord->id_order]);
+                        ?>
+                        <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px; transition: var(--transition);" onmouseover="this.style.borderColor='#cbd5e1'" onmouseout="this.style.borderColor='#e2e8f0'">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                                <div>
+                                    <strong style="color: #2563eb; font-size: 1.05rem;">#<?= htmlspecialchars($ord->invoice_no) ?></strong>
+                                    <span style="font-size: 0.82rem; color: #64748b; margin-left: 8px;">
+                                        &bull; <?= date('d M Y, H:i', strtotime($ord->created_at)) ?>
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="badge <?= $badgeClass ?>" style="padding: 6px 12px;"><?= htmlspecialchars($ord->status_order) ?></span>
+                                </div>
+                            </div>
+
+                            <!-- Items Summary -->
+                            <div style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;">
+                                <?php foreach ($ordItems as $it): ?>
+                                    <div style="display: flex; gap: 12px; align-items: center;">
+                                        <img src="<?= product_image_url($it->image_produk) ?>" alt="<?= htmlspecialchars($it->nama_produk) ?>" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                        <div>
+                                            <strong style="font-size: 0.92rem; color: #0f172a;"><?= htmlspecialchars($it->nama_produk) ?></strong>
+                                            <div style="font-size: 0.8rem; color: #64748b;">
+                                                Size <?= htmlspecialchars($it->ukuran) ?> &bull; <?= $it->qty ?> pasang x <?= format_rupiah($it->harga) ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <?php if (!empty($ord->no_resi)): ?>
+                                <div style="background: #eff6ff; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; color: #1e40af; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa-solid fa-truck"></i>
+                                    <span><strong>No. Resi (<?= htmlspecialchars($ord->kurir) ?>):</strong> <?= htmlspecialchars($ord->no_resi) ?></span>
+                                </div>
+                            <?php endif; ?>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #e2e8f0; padding-top: 14px;">
+                                <div style="font-size: 0.92rem; color: #64748b;">
+                                    Total: <strong style="color: #2563eb; font-size: 1.15rem;"><?= format_rupiah($ord->total_bayar) ?></strong>
+                                </div>
+                                <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
+                                    <i class="fa-solid fa-file-invoice"></i> Lihat Invoice
+                                </a>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <div style="text-align: center; padding: 50px 20px; color: #64748b;">
+                    <div style="width: 70px; height: 70px; border-radius: 50%; background: #f1f5f9; color: #94a3b8; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 16px;">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <h3 style="font-size: 1.15rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Belum Ada Riwayat Pesanan</h3>
+                    <p style="font-size: 0.9rem; margin-bottom: 20px;">Anda belum melakukan pemesanan sepatu apapun di QxuanStore.</p>
+                    <a href="<?= base_url('products.php') ?>" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-shoe-prints"></i> Mulai Belanja Sepatu
+                    </a>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmUserLogout() {
+    Swal.fire({
+        title: 'Konfirmasi Keluar',
+        text: 'Apakah Anda yakin ingin keluar dari akun customer Anda?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Keluar Akun',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '<?= base_url("auth/logout.php") ?>';
+        }
+    });
+}
+</script>
+
+<?php require_once $rootPath . '/includes/footer.php'; ?>
