@@ -8,11 +8,6 @@ $storeContact = get_admin_contact();
 $formattedWa = store_wa_formatted();
 ?>
 
-    <!-- Floating WhatsApp Support Button -->
-    <a href="https://api.whatsapp.com/send?phone=<?= $formattedWa ?>&text=Halo%20Admin%20QxuanStore,%20saya%20ingin%20tanya%20seputar%20produk%20sepatu." class="floating-wa-btn" target="_blank" title="Chat WhatsApp Customer Care">
-        <i class="fa-brands fa-whatsapp"></i>
-    </a>
-
     <!-- Footer Section (Navigasi & Label UMKM Dihilangkan Sesuai Request) -->
     <footer class="site-footer">
         <div class="container">

@@ -38,7 +38,7 @@ function is_menu_active($keyword, $currentUri) {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Admin CSS -->
-    <link rel="stylesheet" href="<?= base_url('assets/css/admin.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/admin.css') ?>?v=<?= file_exists($rootPath . '/assets/css/admin.css') ? filemtime($rootPath . '/assets/css/admin.css') : time() ?>">
 </head>
 <body>
 

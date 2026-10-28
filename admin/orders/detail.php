@@ -127,6 +127,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <h2><i class="fa-solid fa-truck-fast" style="color: #2563eb; margin-right: 8px;"></i> Status & Pengiriman</h2>
             </div>
 
+            <!-- Payment Gateway Summary Badge -->
+            <?php if ($order->status_order !== 'Menunggu Pembayaran'): ?>
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px 14px; border-radius: 8px; margin-bottom: 18px; font-size: 0.88rem; line-height: 1.5;">
+                    <div style="font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                        <i class="fa-solid fa-circle-check" style="color: #16a34a;"></i> Pembayaran Lunas Diterima
+                    </div>
+                    <div><strong>Metode:</strong> <?= htmlspecialchars($order->metode_pembayaran ?? 'Midtrans Payment Gateway') ?></div>
+                    <div><strong>Waktu Bayar:</strong> <?= !empty($order->waktu_bayar) ? date('d M Y, H:i', strtotime($order->waktu_bayar)) : date('d M Y, H:i', strtotime($order->created_at)) ?> WIB</div>
+                </div>
+            <?php else: ?>
+                <div style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 12px 14px; border-radius: 8px; margin-bottom: 18px; font-size: 0.88rem; line-height: 1.5;">
+                    <div style="font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-clock" style="color: #d97706;"></i> Menunggu Pembayaran
+                    </div>
+                    <div style="margin-top: 4px; font-size: 0.82rem; color: #b45309;">Menunggu customer menyelesaikan transaksi via Midtrans Gateway.</div>
+                </div>
+            <?php endif; ?>
+
             <form action="" method="POST">
                 <div class="form-group">
                     <label for="status_order">Status Pesanan</label>

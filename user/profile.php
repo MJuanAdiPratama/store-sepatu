@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
             $_SESSION['nama_lengkap'] = $nama;
             $_SESSION['no_hp'] = $no_hp;
             $userData = db_fetch_one("SELECT * FROM tb_user WHERE user_id = ?", [$userId]);
-            $success = 'Data profil dan alamat pengiriman Anda berhasil diperbarui!';
+            $success = 'Data profil dan alamat domisili customer berhasil diperbarui!';
         } else {
             $error = 'Gagal menyimpan perubahan profil.';
         }
@@ -65,9 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
             $newHashed = password_hash($newPass, PASSWORD_DEFAULT);
             $upd = db_execute("UPDATE tb_user SET password = ? WHERE user_id = ?", [$newHashed, $userId]);
             if ($upd) {
-                $successPass = 'Password Anda berhasil diperbarui!';
+                $successPass = 'Password akun customer berhasil diperbarui dengan aman!';
             } else {
-                $errorPass = 'Gagal memperbarui password.';
+                $errorPass = 'Gagal memperbarui password di database.';
             }
         } else {
             $errorPass = 'Password lama Anda tidak sesuai!';
@@ -75,6 +75,120 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
     }
 }
 ?>
+
+<style>
+/* CSS Konsisten 100% Mengikuti Admin Profile */
+.card-panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 28px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.panel-header h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #1e293b;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #0f172a;
+    box-sizing: border-box;
+    display: block;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+textarea.form-control {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.password-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.password-input-group input.form-control {
+    padding-right: 44px !important;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 1.05rem;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    z-index: 5;
+}
+
+.password-toggle-btn:hover {
+    color: #2563eb;
+}
+
+.profile-cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .profile-cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 
 <div class="container" style="padding-top: 40px; padding-bottom: 70px;">
     <!-- Profile Grid Layout -->
@@ -144,12 +258,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                     </div>
 
                     <?php if (!empty($error)): ?>
-                        <div class="alert alert-danger" style="margin-bottom: 20px;"><?= htmlspecialchars($error) ?></div>
+                        <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                     <?php endif; ?>
                     <?php if (!empty($success)): ?>
-                        <div class="alert alert-success" style="background: #dcfce7; color: #166534; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
-                            <i class="fa-solid fa-circle-check"></i> <?= htmlspecialchars($success) ?>
-                        </div>
+                        <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
                     <?php endif; ?>
 
                     <form action="" method="POST">
@@ -162,19 +274,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
 
                         <div class="form-group">
                             <label for="no_hp">Nomor WhatsApp Customer</label>
-                            <input type="tel" id="no_hp" name="no_hp" class="form-control" placeholder="Contoh: 08123456789" value="<?= htmlspecialchars($userData->no_hp) ?>" required>
+                            <input type="text" id="no_hp" name="no_hp" class="form-control" placeholder="Contoh: 082188997766" value="<?= htmlspecialchars($userData->no_hp) ?>" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="email">Alamat Email Customer</label>
-                            <input type="email" id="email" class="form-control" value="<?= htmlspecialchars($userData->email) ?>" disabled style="background: #f8fafc; color: #64748b; cursor: not-allowed;">
-                            <small style="color: #64748b; font-size: 0.8rem; margin-top: 4px; display: block;"><i class="fa-solid fa-lock" style="font-size: 0.72rem;"></i> Email akun terdaftar &bull; identitas login</small>
+                            <label for="email">Email Customer</label>
+                            <input type="email" id="email" name="email" class="form-control" value="<?= htmlspecialchars($userData->email) ?>" disabled style="background-color: #f8fafc; color: #64748b; cursor: not-allowed;">
+                            <small style="color: #64748b; font-size: 0.8rem; margin-top: 4px; display: block;"><i class="fa-solid fa-lock" style="font-size: 0.72rem;"></i> Email terdaftar sebagai identitas login utama</small>
                         </div>
 
                         <div class="form-group">
-                            <label for="alamat">Alamat Pengiriman Utama</label>
+                            <label for="alamat">Alamat Domisili & Pengiriman</label>
                             <textarea id="alamat" name="alamat" class="form-control" rows="3" placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kota, kode pos..."><?= htmlspecialchars($userData->alamat ?? '') ?></textarea>
-                            <small style="color: #64748b; font-size: 0.8rem; margin-top: 4px; display: block;">Alamat default ini akan otomatis terisi saat checkout pesanan sepatu.</small>
+                            <small style="color: #64748b; font-size: 0.8rem; margin-top: 4px; display: block;">Alamat ini akan otomatis terisi saat melakukan checkout pesanan sepatu.</small>
                         </div>
 
                         <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
@@ -190,19 +302,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                     </div>
 
                     <?php if (!empty($errorPass)): ?>
-                        <div class="alert alert-danger" style="margin-bottom: 20px;"><?= htmlspecialchars($errorPass) ?></div>
+                        <div class="alert alert-danger"><?= htmlspecialchars($errorPass) ?></div>
                     <?php endif; ?>
                     <?php if (!empty($successPass)): ?>
-                        <div class="alert alert-success" style="background: #dcfce7; color: #166534; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
-                            <i class="fa-solid fa-circle-check"></i> <?= htmlspecialchars($successPass) ?>
-                        </div>
+                        <div class="alert alert-success"><?= htmlspecialchars($successPass) ?></div>
                     <?php endif; ?>
 
                     <form action="" method="POST">
                         <input type="hidden" name="change_password" value="1">
 
                         <div class="form-group">
-                            <label for="old_password">Password Saat Ini</label>
+                            <label for="old_password">Password Lama</label>
                             <div class="password-input-group">
                                 <input type="password" id="old_password" name="old_password" class="form-control" placeholder="Masukkan password saat ini" required>
                                 <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('old_password', 'uOldPassIcon')" aria-label="Lihat password">
@@ -232,7 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                         </div>
 
                         <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
-                            <i class="fa-solid fa-shield-halved"></i> Perbarui Password
+                            <i class="fa-solid fa-shield-halved"></i> Simpan Password Baru
                         </button>
                     </form>
                 </div>

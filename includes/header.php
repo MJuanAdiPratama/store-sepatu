@@ -39,7 +39,7 @@ if (is_user() && isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Modern Main CSS -->
-    <link rel="stylesheet" href="<?= base_url('assets/css/style.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/style.css') ?>?v=<?= file_exists($rootPath . '/assets/css/style.css') ? filemtime($rootPath . '/assets/css/style.css') : time() ?>">
 </head>
 <body>
 
