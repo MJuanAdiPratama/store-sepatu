@@ -111,7 +111,10 @@ function midtrans_get_snap_token($order, $items = []) {
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        if (PHP_VERSION_ID < 80000 && is_resource($ch)) {
+            curl_close($ch);
+        }
+        unset($ch);
 
         if ($httpCode >= 200 && $httpCode < 300 && !empty($response)) {
             $resData = json_decode($response, true);
