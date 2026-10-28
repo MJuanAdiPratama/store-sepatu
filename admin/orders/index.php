@@ -82,6 +82,11 @@ $orders = db_fetch_all("SELECT * FROM tb_order $where ORDER BY id_order DESC", $
                         <tr>
                             <td>
                                 <strong>#<?= htmlspecialchars($ord->invoice_no) ?></strong>
+                                <?php if (isset($ord->is_read) && $ord->is_read == 0): ?>
+                                    <span class="badge" style="background: #ef4444; color: #fff; font-size: 0.68rem; padding: 2px 7px; border-radius: 99px; font-weight: 800; margin-left: 6px;">
+                                        <i class="fa-solid fa-bell"></i> Baru
+                                    </span>
+                                <?php endif; ?>
                             </td>
                             <td><?= date('d M Y, H:i', strtotime($ord->created_at)) ?></td>
                             <td><?= htmlspecialchars($ord->nama_penerima) ?></td>
@@ -106,9 +111,14 @@ $orders = db_fetch_all("SELECT * FROM tb_order $where ORDER BY id_order DESC", $
                                 <?php endif; ?>
                             </td>
                             <td style="text-align: right;">
-                                <a href="<?= admin_url('orders/detail.php?id=' . $ord->id_order) ?>" class="btn btn-secondary btn-sm" title="Lihat Detail Pesanan">
-                                    <i class="fa-solid fa-eye"></i> Detail
-                                </a>
+                                <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                                    <a href="<?= admin_url('orders/print.php?id=' . $ord->id_order) ?>" target="_blank" class="btn btn-secondary btn-sm" title="Cetak Struk Pesanan">
+                                        <i class="fa-solid fa-print"></i>
+                                    </a>
+                                    <a href="<?= admin_url('orders/detail.php?id=' . $ord->id_order) ?>" class="btn btn-secondary btn-sm" title="Lihat Detail Pesanan">
+                                        <i class="fa-solid fa-eye"></i> Detail
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

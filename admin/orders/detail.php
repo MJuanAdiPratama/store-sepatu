@@ -15,6 +15,19 @@ if (!$order) {
     redirect(admin_url('orders/index.php'));
 }
 
+// Mark order as read when admin views it
+if (isset($order->is_read) && $order->is_read == 0) {
+    db_execute("UPDATE tb_order SET is_read = 1 WHERE id_order = ?", [$id]);
+    $order->is_read = 1;
+}
+
+// Auto-fill No. Resi if empty
+if (empty($order->no_resi)) {
+    $autoResi = generate_no_resi($order->kurir ?? 'J&T Express');
+    db_execute("UPDATE tb_order SET no_resi = ? WHERE id_order = ?", [$autoResi, $id]);
+    $order->no_resi = $autoResi;
+}
+
 // Quick action: Mark as Delivered (Selesai)
 if (isset($_GET['action']) && $_GET['action'] === 'mark_delivered') {
     $now = date('Y-m-d H:i:s');
@@ -133,13 +146,18 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
 }
 </style>
 
-<!-- Top Progress Stepper (Alur Kerja Pesanan) -->
+<!-- Top Progress Stepper (Alur Pesanan) -->
 <div class="order-stepper-box">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <h2 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-timeline" style="color: #2563eb;"></i> Alur Kerja Pesanan #<?= htmlspecialchars($order->invoice_no) ?>
+            <i class="fa-solid fa-timeline" style="color: #2563eb;"></i> Alur Pesanan #<?= htmlspecialchars($order->invoice_no) ?>
         </h2>
-        <span class="badge <?= $badgeClass ?>" style="padding: 6px 14px; font-size: 0.85rem;">Status: <?= htmlspecialchars($order->status_order) ?></span>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <a href="<?= admin_url('orders/print.php?id=' . $order->id_order) ?>" target="_blank" class="btn btn-sm" style="background: #0284c7; color: #fff; border-radius: 8px; font-weight: 600;">
+                <i class="fa-solid fa-print"></i> Cetak Struk
+            </a>
+            <span class="badge <?= $badgeClass ?>" style="padding: 6px 14px; font-size: 0.85rem;">Status: <?= htmlspecialchars($order->status_order) ?></span>
+        </div>
     </div>
 
     <div class="order-stepper">
@@ -323,29 +341,17 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
                     </p>
 
                     <div style="font-size: 0.82rem; color: #475569; background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #dbeafe; margin-bottom: 14px;">
-                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">💡 Bagaimana Admin Tahu Barang Sudah Sampai?</strong>
-                        <ol style="margin-left: 18px; margin-bottom: 0; line-height: 1.6;">
-                            <li><strong>Konfirmasi Customer:</strong> Di akun pembeli sudah tersedia tombol <em>"Pesanan Sudah Diterima"</em>. Saat diklik pembeli, status di sini otomatis berubah menjadi <strong>Selesai</strong>.</li>
-                            <li><strong>Lacak Resi Ekspedisi:</strong> Gunakan tombol lacak resi di bawah untuk memantau status pengantaran kurir secara live.</li>
-                            <li><strong>Konfirmasi WhatsApp:</strong> Tanyakan langsung ke pembeli via WA jika resi menunjukkan status Delivered.</li>
-                        </ol>
+                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">💡 Informasi Pengiriman Paket</strong>
+                        <p style="margin-bottom: 0; line-height: 1.5;">Paket sedang dalam perjalanan ekspedisi. Customer dapat mengonfirmasi penerimaan sepatu di akun mereka saat barang tiba, atau Admin dapat memantau status resi di bawah ini.</p>
                     </div>
 
-                    <!-- Action buttons for tracking & quick confirm -->
+                    <!-- Action button for tracking only -->
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <?php if (!empty($order->no_resi)): ?>
-                            <a href="https://cekresi.com/?noresi=<?= urlencode($order->no_resi) ?>" target="_blank" class="btn btn-secondary btn-sm" style="justify-content: center; background: #fff;">
-                                <i class="fa-solid fa-magnifying-glass-location" style="color: #2563eb;"></i> Lacak Resi Pengiriman (CekResi.com)
+                            <a href="https://cekresi.com/?noresi=<?= urlencode($order->no_resi) ?>" target="_blank" class="btn btn-primary btn-sm" style="justify-content: center; padding: 11px 16px; border-radius: 8px; font-weight: 700;">
+                                <i class="fa-solid fa-magnifying-glass-location"></i> Lacak Resi Pengiriman (CekResi.com)
                             </a>
                         <?php endif; ?>
-
-                        <a href="https://api.whatsapp.com/send?phone=<?= preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $order->no_hp)) ?>&text=Halo%20<?= urlencode($order->nama_penerima) ?>,%20kami%20dari%20Admin%20QxuanStore%20ingin%20menanyakan%20apakah%20paket%20sepatu%20pesanan%20%23<?= $order->invoice_no ?>%20yang%20dikirim%20via%20<?= urlencode($order->kurir) ?>%20(Resi:%20<?= urlencode($order->no_resi) ?>)%20sudah%20sampai%20di%20tempat%20Anda?%20Terima%20kasih." target="_blank" class="btn btn-sm" style="background: #25d366; color: #fff; justify-content: center;">
-                            <i class="fa-brands fa-whatsapp"></i> Tanya Penerimaan via WhatsApp
-                        </a>
-
-                        <button type="button" onclick="confirmAdminMarkDelivered(<?= $order->id_order ?>, '<?= $order->invoice_no ?>')" class="btn btn-primary btn-sm" style="justify-content: center; background: #16a34a; border-color: #15803d; margin-top: 4px;">
-                            <i class="fa-solid fa-circle-check"></i> Tandai Paket Telah Diterima (Selesai)
-                        </button>
                     </div>
                 </div>
 

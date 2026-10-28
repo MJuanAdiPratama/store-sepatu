@@ -312,6 +312,13 @@ if (payBtn) {
             return;
         }
 
+        // Check if token is a demo fallback (when custom Midtrans keys are not yet set)
+        const isDemoToken = SNAP_TOKEN.startsWith('DEMO_SNAP_') || SNAP_TOKEN.startsWith('DEMO_');
+        if (isDemoToken) {
+            triggerPaymentSimulator();
+            return;
+        }
+
         // Check if Snap is loaded
         if (typeof window.snap !== 'undefined' && typeof window.snap.pay === 'function') {
             window.snap.pay(SNAP_TOKEN, {
@@ -398,22 +405,65 @@ function verifyPaymentSuccess(methodName) {
 // Trigger Sandbox Testing Payment Simulator
 function triggerPaymentSimulator() {
     Swal.fire({
-        title: 'Pilih Metode Pembayaran (Simulator)',
-        text: 'Simulasikan pembayaran instan untuk mengubah status pesanan menjadi "Diproses":',
-        icon: 'question',
+        title: 'Midtrans Payment Gateway',
+        html: `
+            <div style="text-align: center; margin-bottom: 16px;">
+                <span class="badge badge-info" style="font-size: 0.75rem; padding: 4px 10px;">Sandbox Testing Mode</span>
+                <p style="color: #64748b; font-size: 0.88rem; margin-top: 8px;">
+                    Pilih metode pembayaran instan untuk menyelesaikan pesanan <strong>#${INVOICE_NO}</strong>:
+                </p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
+                <button type="button" id="payQris" class="btn btn-secondary" style="justify-content: flex-start; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; width: 100%; transition: all 0.2s;" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='#e2e8f0'">
+                    <i class="fa-solid fa-qrcode" style="color: #ea580c; font-size: 1.3rem; width: 30px; text-align: center;"></i>
+                    <div>
+                        <strong style="color: #0f172a; font-size: 0.92rem; display: block;">QRIS (GoPay / ShopeePay / DANA)</strong>
+                        <small style="color: #64748b; font-size: 0.78rem;">Scan & verifikasi instan otomatis</small>
+                    </div>
+                </button>
+                <button type="button" id="payBca" class="btn btn-secondary" style="justify-content: flex-start; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; width: 100%; transition: all 0.2s;" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='#e2e8f0'">
+                    <i class="fa-solid fa-building-columns" style="color: #2563eb; font-size: 1.3rem; width: 30px; text-align: center;"></i>
+                    <div>
+                        <strong style="color: #0f172a; font-size: 0.92rem; display: block;">BCA Virtual Account</strong>
+                        <small style="color: #64748b; font-size: 0.78rem;">Konfirmasi otomatis tanpa upload struk</small>
+                    </div>
+                </button>
+                <button type="button" id="payMandiri" class="btn btn-secondary" style="justify-content: flex-start; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; width: 100%; transition: all 0.2s;" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='#e2e8f0'">
+                    <i class="fa-solid fa-credit-card" style="color: #16a34a; font-size: 1.3rem; width: 30px; text-align: center;"></i>
+                    <div>
+                        <strong style="color: #0f172a; font-size: 0.92rem; display: block;">Mandiri / BNI / BRI Virtual Account</strong>
+                        <small style="color: #64748b; font-size: 0.78rem;">Transfer bank & verifikasi otomatis</small>
+                    </div>
+                </button>
+            </div>
+        `,
+        showConfirmButton: false,
         showCancelButton: true,
-        confirmButtonColor: '#2563eb',
+        cancelButtonText: 'Tutup',
         cancelButtonColor: '#64748b',
-        confirmButtonText: '<i class="fa-solid fa-qrcode"></i> Bayar via QRIS (GoPay/ShopeePay)',
-        showDenyButton: true,
-        denyButtonText: '<i class="fa-solid fa-building-columns"></i> Bayar via Virtual Account BCA',
-        denyButtonColor: '#059669',
-        cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            verifyPaymentSuccess('Midtrans QRIS (GoPay/ShopeePay)');
-        } else if (result.isDenied) {
-            verifyPaymentSuccess('Midtrans Virtual Account (BCA)');
+        didOpen: () => {
+            const btnQris = document.getElementById('payQris');
+            const btnBca = document.getElementById('payBca');
+            const btnMandiri = document.getElementById('payMandiri');
+
+            if (btnQris) {
+                btnQris.onclick = () => {
+                    Swal.close();
+                    verifyPaymentSuccess('Midtrans QRIS (GoPay/ShopeePay)');
+                };
+            }
+            if (btnBca) {
+                btnBca.onclick = () => {
+                    Swal.close();
+                    verifyPaymentSuccess('Midtrans Virtual Account (BCA)');
+                };
+            }
+            if (btnMandiri) {
+                btnMandiri.onclick = () => {
+                    Swal.close();
+                    verifyPaymentSuccess('Midtrans Virtual Account (Mandiri/BNI)');
+                };
+            }
         }
     });
 }

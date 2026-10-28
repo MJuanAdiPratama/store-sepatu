@@ -59,21 +59,25 @@ Sistem pesanan di QxuanStore memiliki siklus 5 tahap yang transparan dari awal b
 ### Tahap 2: Checkout & Pemesanan (Customer)
 1. Pelanggan menuju halaman checkout (`user/checkout.php`).
 2. Data nama, nomor WhatsApp, dan alamat domisili terisi otomatis dari profil pelanggan.
-3. Pelanggan memilih kurir ekspedisi (J&T, JNE, SiCepat, POS Indonesia) dan menambahkan catatan pesanan.
-4. Sistem membuat data pesanan di tabel `tb_order` dengan status awal **`Menunggu Pembayaran`** dan nomor Invoice unik (contoh: `INV-20261028-XXXXXX`).
+3. Pelanggan memilih opsi pengiriman:
+   * **Ekspedisi (J&T Express, JNE Regular, SiCepat Reguler):** Nomor resi otomatis dibuatkan oleh sistem dan pesanan dikirimkan via kurir ke alamat pembeli.
+   * **Ambil di Toko Fisik:** Bebas biaya ongkir dan mendapatkan potongan harga sepatu sebesar **Rp 15.000**.
+4. Sistem membuat data pesanan di tabel `tb_order` dengan status awal **`Menunggu Pembayaran`**, nomor Invoice unik (contoh: `INV-20261028-XXXXXX`), nomor resi otomatis, dan status `is_read = 0` (memicu notifikasi merah pesanan baru di dashboard admin).
 
 ### Tahap 3: Pembayaran Otomatis via Midtrans Gateway
 1. Pelanggan diarahkan ke halaman pembayaran (`user/order-success.php`).
-2. Sistem otomatis memanggil API Midtrans untuk mendapatkan **Snap Token**.
-3. Pelanggan mengklik tombol **"Bayar Sekarang via Midtrans Gateway"** untuk membuka pop-up Snap, atau menggunakan tombol **"Simulasi Bayar Langsung"** untuk pengujian lokal.
-4. **Verifikasi Otomatis:** Setelah pembayaran lunas, Midtrans mengirimkan notifikasi callback ke `api/midtrans_callback.php` dan `api/verify_payment.php`.
-5. Status pesanan seketika berubah dari `"Menunggu Pembayaran"` menjadi **`"Diproses"`**, serta mencatat metode pembayaran dan waktu bayar.
+2. Sistem otomatis mengaitkan **Snap Token** transaksi.
+3. Pelanggan mengklik tombol **"Bayar Sekarang via Midtrans Gateway"**:
+   * **Mode Demo / Sandbox:** Jika belum mengonfigurasi API Keys akun Midtrans pribadi di `config/midtrans.php`, sistem otomatis menampilkan dialog simulator pembayaran instan yang elegan (QRIS GoPay/ShopeePay/DANA & Virtual Account).
+   * **Mode Produksi / Akun Asli:** Jika kredensial akun Midtrans telah diisi, pop-up resmi Snap JS akan terbuka langsung.
+4. **Verifikasi Otomatis:** Begitu pembayaran diselesaikan, sistem memproses callback `api/verify_payment.php`.
+5. Status pesanan seketika berubah dari `"Menunggu Pembayaran"` menjadi **`"Diproses"`**, serta mencatat metode pembayaran dan waktu bayar secara real-time.
 
-### Tahap 4: Pemrosesan & Pengemasan Produk (Admin)
-1. Admin melihat pesanan baru berstatus `"Diproses"` di Dashboard Admin (`admin/orders/index.php`).
-2. Admin mengemas sepatu sesuai model dan ukuran yang tertera pada rincian pesanan.
-3. Admin menyerahkan paket ke pihak ekspedisi dan mendapatkan Nomor Resi Pengiriman.
-4. Di halaman detail pesanan (`admin/orders/detail.php`), Admin memasukkan kurir & **Nomor Resi**, lalu mengubah status pesanan menjadi **`"Dikirim"`**.
+### Tahap 4: Pemrosesan, Cetak Struk, & Pengiriman Produk (Admin)
+1. Admin melihat lonceng notifikasi dan badge **"Baru"** di menu *Pesanan Masuk* (`admin/orders/index.php`).
+2. Admin dapat mengklik tombol **"Cetak Struk"** untuk mencetak struk fisik / PDF bukti transaksi untuk disisipkan ke dalam kardus sepatu.
+3. Nomor resi pengiriman telah otomatis terisi sesuai kurir yang dipilih pelanggan. Admin menyiapkan dan mengemas sepatu, lalu mengubah status menjadi **`"Dikirim"`**.
+4. Di panel admin, tombol aksi langsung menampilkan **"Lacak Resi Pengiriman (CekResi.com)"** untuk memonitor perjalanan paket secara langsung.
 
 ---
 

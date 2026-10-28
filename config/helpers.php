@@ -146,3 +146,20 @@ if (!function_exists('store_wa_formatted')) {
         return preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $telp));
     }
 }
+
+if (!function_exists('generate_no_resi')) {
+    function generate_no_resi($kurir = '') {
+        $prefix = 'JT';
+        $k = strtolower($kurir);
+        if (strpos($k, 'jne') !== false) {
+            $prefix = 'JNE';
+        } elseif (strpos($k, 'sicepat') !== false) {
+            $prefix = 'SCP';
+        } elseif (strpos($k, 'pos') !== false) {
+            $prefix = 'POS';
+        } elseif (strpos($k, 'ambil') !== false || strpos($k, 'pickup') !== false || strpos($k, 'toko') !== false) {
+            $prefix = 'TOKO';
+        }
+        return $prefix . date('ymd') . strtoupper(bin2hex(random_bytes(3)));
+    }
+}

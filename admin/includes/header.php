@@ -15,6 +15,11 @@ require_admin();
 $admin = current_admin();
 $currentUri = str_replace('\\', '/', $_SERVER['REQUEST_URI'] ?? '');
 
+$unreadOrdersCount = 0;
+try {
+    $unreadOrdersCount = (int)(db_fetch_one("SELECT COUNT(*) AS total FROM tb_order WHERE is_read = 0")->total ?? 0);
+} catch (\Throwable $e) {}
+
 function is_menu_active($keyword, $currentUri) {
     return (strpos($currentUri, $keyword) !== false) ? 'active' : '';
 }
@@ -77,9 +82,16 @@ function is_menu_active($keyword, $currentUri) {
             
             <li class="sidebar-heading">Penjualan</li>
             <li>
-                <a href="<?= admin_url('orders/index.php') ?>" class="<?= is_menu_active('orders', $currentUri) ?>">
-                    <i class="fa-solid fa-cart-shopping"></i>
-                    <span>Pesanan Masuk</span>
+                <a href="<?= admin_url('orders/index.php') ?>" class="<?= is_menu_active('orders', $currentUri) ?>" style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        <span>Pesanan Masuk</span>
+                    </div>
+                    <?php if ($unreadOrdersCount > 0): ?>
+                        <span class="badge" style="background: #ef4444; color: #fff; font-size: 0.72rem; padding: 2px 7px; border-radius: 99px; font-weight: 800;">
+                            <?= $unreadOrdersCount ?> Baru
+                        </span>
+                    <?php endif; ?>
                 </a>
             </li>
             
@@ -114,7 +126,16 @@ function is_menu_active($keyword, $currentUri) {
                 <h1><?= $pageTitle ?? 'Dashboard Admin' ?></h1>
             </div>
             
-            <div class="topbar-actions">
+            <div class="topbar-actions" style="display: flex; align-items: center; gap: 14px;">
+                <a href="<?= admin_url('orders/index.php') ?>" title="<?= $unreadOrdersCount ?> Pesanan Belum Dilihat" style="position: relative; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: #fff; border: 1px solid #e2e8f0; color: #475569; text-decoration: none;">
+                    <i class="fa-solid fa-bell" style="font-size: 1.15rem;"></i>
+                    <?php if ($unreadOrdersCount > 0): ?>
+                        <span style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: #fff; font-size: 0.68rem; font-weight: 800; min-width: 18px; height: 18px; border-radius: 99px; display: flex; align-items: center; justify-content: center; padding: 0 4px; box-shadow: 0 2px 6px rgba(239,68,68,0.4);">
+                            <?= $unreadOrdersCount ?>
+                        </span>
+                    <?php endif; ?>
+                </a>
+
                 <div class="admin-profile-badge">
                     <div class="avatar"><?= strtoupper(substr($admin->admin_name ?? 'A', 0, 1)) ?></div>
                     <span><?= htmlspecialchars($admin->admin_name ?? 'Admin') ?></span>

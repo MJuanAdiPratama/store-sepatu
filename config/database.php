@@ -4,6 +4,8 @@
  * QxuanStore - Shoe E-Commerce
  */
 
+date_default_timezone_set('Asia/Jakarta');
+
 $hostname = 'localhost';
 $username = 'root';
 $password = '';
@@ -16,6 +18,7 @@ if (!$conn) {
 }
 
 mysqli_set_charset($conn, "utf8mb4");
+mysqli_query($conn, "SET time_zone = '+07:00'");
 
 /**
  * Execute a SELECT query with prepared statement

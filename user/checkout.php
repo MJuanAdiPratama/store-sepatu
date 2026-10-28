@@ -24,9 +24,9 @@ require_once $rootPath . '/includes/header.php';
 $userId = $_SESSION['user_id'];
 $currentUser = db_fetch_one("SELECT * FROM tb_user WHERE user_id = ?", [$userId]);
 
-$totalBayar = 0;
+$subtotalSepatu = 0;
 foreach ($cart as $item) {
-    $totalBayar += ($item['harga'] * $item['qty']);
+    $subtotalSepatu += ($item['harga'] * $item['qty']);
 }
 
 $error = '';
@@ -41,15 +41,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($nama_penerima) || empty($no_hp) || empty($alamat)) {
         $error = 'Nama penerima, nomor WhatsApp, dan alamat pengiriman wajib diisi lengkap!';
     } else {
+        // Calculate total with discount if pickup
+        $diskonOngkir = ($kurir === 'Ambil di Toko Fisik') ? 15000 : 0;
+        $totalBayar = max(0, $subtotalSepatu - $diskonOngkir);
+
         // Generate Unique Invoice Number
         $invoiceNo = 'INV-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
 
-        // Insert into tb_order
+        // Auto-generate tracking number
+        $noResi = generate_no_resi($kurir);
+
+        // Insert into tb_order with is_read = 0 (Unread notification for admin)
         $sqlOrder = "
-            INSERT INTO tb_order (invoice_no, user_id, nama_penerima, no_hp, alamat_pengiriman, catatan, total_bayar, status_order, kurir) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'Menunggu Pembayaran', ?)
+            INSERT INTO tb_order (invoice_no, user_id, nama_penerima, no_hp, alamat_pengiriman, catatan, total_bayar, status_order, kurir, no_resi, is_read) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Menunggu Pembayaran', ?, ?, 0)
         ";
-        $orderInserted = db_execute($sqlOrder, [$invoiceNo, $userId, $nama_penerima, $no_hp, $alamat, $catatan, $totalBayar, $kurir]);
+        $orderInserted = db_execute($sqlOrder, [$invoiceNo, $userId, $nama_penerima, $no_hp, $alamat, $catatan, $totalBayar, $kurir, $noResi]);
 
         if ($orderInserted) {
             $orderId = db_insert_id();
@@ -83,6 +90,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+
+<style>
+/* Expedition Card Selection & Hover */
+.expedition-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+.expedition-card {
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    padding: 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    user-select: none;
+}
+.expedition-card:hover {
+    border-color: #93c5fd;
+    background: #f8fafc;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+.expedition-card.selected {
+    border: 2px solid #2563eb !important;
+    background: #eff6ff !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15) !important;
+}
+.expedition-card input[type="radio"] {
+    accent-color: #2563eb;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+@media (max-width: 640px) {
+    .expedition-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 
 <div class="container" style="padding-top: 40px; padding-bottom: 70px;">
     <!-- Breadcrumb -->
@@ -150,13 +201,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <i class="fa-solid fa-truck-fast" style="color: #2563eb;"></i> Pilihan Ekspedisi Pengiriman
                     </h2>
                     <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 16px;">
-                        Pilih jasa kurir yang Anda inginkan untuk mengantar paket sepatu Anda:
+                        Pilih opsi pengiriman yang Anda inginkan (pilih <strong>Ambil di Toko</strong> untuk bebas ongkir dan potongan Rp 15.000):
                     </p>
 
-                    <div class="expedition-grid">
+                    <div class="expedition-grid" id="expeditionGrid">
                         <!-- J&T -->
-                        <label style="border: 2px solid #2563eb; background: #eff6ff; padding: 14px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
-                            <input type="radio" name="kurir" value="J&T Express" checked>
+                        <label class="expedition-card selected">
+                            <input type="radio" name="kurir" value="J&T Express" checked onchange="handleExpeditionChange(this)">
                             <div>
                                 <strong style="display: block; font-size: 0.95rem; color: #0f172a;">J&T Express</strong>
                                 <small style="color: #2563eb; font-weight: 600;">Estimasi 1-2 Hari &bull; Populer</small>
@@ -164,8 +215,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </label>
 
                         <!-- JNE -->
-                        <label style="border: 1px solid #cbd5e1; background: #fff; padding: 14px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
-                            <input type="radio" name="kurir" value="JNE Regular">
+                        <label class="expedition-card">
+                            <input type="radio" name="kurir" value="JNE Regular" onchange="handleExpeditionChange(this)">
                             <div>
                                 <strong style="display: block; font-size: 0.95rem; color: #0f172a;">JNE Regular</strong>
                                 <small style="color: #64748b;">Estimasi 2-3 Hari &bull; Terpercaya</small>
@@ -173,8 +224,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </label>
 
                         <!-- SiCepat -->
-                        <label style="border: 1px solid #cbd5e1; background: #fff; padding: 14px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
-                            <input type="radio" name="kurir" value="SiCepat Reguler">
+                        <label class="expedition-card">
+                            <input type="radio" name="kurir" value="SiCepat Reguler" onchange="handleExpeditionChange(this)">
                             <div>
                                 <strong style="display: block; font-size: 0.95rem; color: #0f172a;">SiCepat Reguler</strong>
                                 <small style="color: #64748b;">Estimasi 1-2 Hari &bull; Cepat</small>
@@ -182,11 +233,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </label>
 
                         <!-- Ambil di Toko -->
-                        <label style="border: 1px solid #cbd5e1; background: #fff; padding: 14px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
-                            <input type="radio" name="kurir" value="Ambil di Toko Fisik">
+                        <label class="expedition-card">
+                            <input type="radio" name="kurir" value="Ambil di Toko Fisik" onchange="handleExpeditionChange(this)">
                             <div>
-                                <strong style="display: block; font-size: 0.95rem; color: #0f172a;">Ambil di Toko</strong>
-                                <small style="color: #16a34a; font-weight: 700;">Tanpa Biaya Ongkir</small>
+                                <strong style="display: block; font-size: 0.95rem; color: #0f172a;">Ambil di Toko Fisik</strong>
+                                <small style="color: #16a34a; font-weight: 700;">Gratis Ongkir &bull; Hemat Rp 15.000</small>
                             </div>
                         </label>
                     </div>
@@ -218,12 +269,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.92rem;">
                     <span style="color: #64748b;">Subtotal Sepatu:</span>
-                    <strong><?= format_rupiah($totalBayar) ?></strong>
+                    <strong id="displaySubtotal"><?= format_rupiah($subtotalSepatu) ?></strong>
+                </div>
+
+                <!-- Row Potongan Ambil di Toko (Muncul jika pilih Ambil di Toko) -->
+                <div id="rowPickupDiscount" style="display: none; justify-content: space-between; margin-bottom: 10px; font-size: 0.92rem; color: #16a34a; background: #f0fdf4; padding: 6px 10px; border-radius: 6px; border: 1px dashed #86efac;">
+                    <span><i class="fa-solid fa-tag"></i> Potongan Bebas Ongkir:</span>
+                    <strong>-Rp 15.000</strong>
                 </div>
 
                 <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 1.1rem; border-top: 1px dashed #e2e8f0; padding-top: 14px;">
                     <span style="font-weight: 800;">Total Pembayaran:</span>
-                    <strong style="color: #2563eb; font-size: 1.35rem;"><?= format_rupiah($totalBayar) ?></strong>
+                    <strong id="displayTotal" style="color: #2563eb; font-size: 1.35rem;"><?= format_rupiah($subtotalSepatu) ?></strong>
                 </div>
 
                 <button type="button" onclick="confirmSubmitOrder()" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 1.05rem; border-radius: 10px;">
@@ -231,7 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </button>
 
                 <div style="margin-top: 16px; font-size: 0.78rem; color: #64748b; text-align: center; line-height: 1.5;">
-                    <i class="fa-solid fa-lock" style="color: #16a34a;"></i> Data pesanan Anda tersimpan aman dan langsung terhubung dengan WhatsApp Admin.
+                    <i class="fa-solid fa-lock" style="color: #16a34a;"></i> Data pesanan Anda tersimpan aman dan langsung terhubung dengan Dashboard Admin.
                 </div>
             </div>
         </div>
@@ -239,6 +296,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
+const BASE_SUBTOTAL = <?= (int)$subtotalSepatu ?>;
+
+function formatRupiah(number) {
+    return 'Rp ' + number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function handleExpeditionChange(radioEl) {
+    // Remove .selected from all cards
+    document.querySelectorAll('.expedition-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    // Add .selected to the parent label of the checked radio
+    const parentLabel = radioEl.closest('.expedition-card');
+    if (parentLabel) {
+        parentLabel.classList.add('selected');
+    }
+
+    // Check if Ambil di Toko
+    const isPickup = (radioEl.value === 'Ambil di Toko Fisik');
+    const rowDiscount = document.getElementById('rowPickupDiscount');
+    const displayTotal = document.getElementById('displayTotal');
+
+    if (isPickup) {
+        rowDiscount.style.display = 'flex';
+        const finalPrice = Math.max(0, BASE_SUBTOTAL - 15000);
+        displayTotal.innerText = formatRupiah(finalPrice);
+    } else {
+        rowDiscount.style.display = 'none';
+        displayTotal.innerText = formatRupiah(BASE_SUBTOTAL);
+    }
+}
+
 function confirmSubmitOrder() {
     const nama = document.getElementById('nama_penerima').value.trim();
     const hp = document.getElementById('no_hp').value.trim();
@@ -254,14 +344,20 @@ function confirmSubmitOrder() {
         return;
     }
 
+    const selectedKurir = document.querySelector('input[name="kurir"]:checked')?.value || 'J&T Express';
+    let summaryText = `Pengiriman via ${selectedKurir}. Lanjutkan pembuatan pesanan?`;
+    if (selectedKurir === 'Ambil di Toko Fisik') {
+        summaryText = `Opsi Ambil di Toko Fisik (Bebas Ongkir & Potongan Rp 15.000). Lanjutkan pembuatan pesanan?`;
+    }
+
     Swal.fire({
-        title: 'Konfirmasi Pesanan?',
-        text: 'Pastikan nama penerima, nomor WhatsApp, dan alamat pengiriman sudah benar. Lanjutkan pembuatan pesanan?',
+        title: 'Konfirmasi Pesanan Sepatu',
+        text: summaryText,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#2563eb',
         cancelButtonColor: '#64748b',
-        confirmButtonText: 'Ya, Buat Pesanan',
+        confirmButtonText: '<i class="fa-solid fa-arrow-right"></i> Ya, Lanjutkan Pembayaran',
         cancelButtonText: 'Periksa Kembali'
     }).then((result) => {
         if (result.isConfirmed) {

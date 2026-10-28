@@ -60,12 +60,19 @@ if (is_user() && isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
                     <div>Qxuan<span>Store</span></div>
                 </a>
 
-                <!-- Expanded Responsive Search Bar (Navbar links removed per request) -->
-                <form action="<?= base_url('products.php') ?>" method="GET" class="header-search expanded-search" onsubmit="return handleSearchSubmit(event, this)">
-                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="text" name="search" placeholder="Cari model sepatu, sneakers impianmu..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
-                    <button type="submit" class="search-submit-btn">Cari</button>
-                </form>
+                <?php 
+                    $currentUri = str_replace('\\', '/', $_SERVER['REQUEST_URI'] ?? '');
+                    $isProfilePage = (strpos($currentUri, 'profile.php') !== false);
+                    $showSearchBar = !$isProfilePage && (strpos($currentUri, 'index.php') !== false || strpos($currentUri, 'products.php') !== false || strpos($currentUri, 'product-detail.php') !== false || basename($_SERVER['PHP_SELF']) === 'index.php');
+                ?>
+                <?php if ($showSearchBar): ?>
+                    <!-- Expanded Responsive Search Bar (Hanya tampil di Beranda & Katalog Produk) -->
+                    <form action="<?= base_url('products.php') ?>" method="GET" class="header-search expanded-search" onsubmit="return handleSearchSubmit(event, this)">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" name="search" placeholder="Cari model sepatu, sneakers impianmu..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+                        <button type="submit" class="search-submit-btn">Cari</button>
+                    </form>
+                <?php endif; ?>
 
                 <!-- Header Actions -->
                 <div class="header-actions">
