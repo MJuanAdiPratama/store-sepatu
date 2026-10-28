@@ -68,6 +68,29 @@ $items = db_fetch_all("
     WHERE od.id_order = ?
 ", [$id]);
 
+// Prepare personalized WhatsApp message
+$itemSummaryList = [];
+foreach ($items as $it) {
+    $qtyText = (isset($it->qty) && $it->qty > 1) ? ' (' . $it->qty . ' pasang)' : '';
+    $itemSummaryList[] = $it->nama_produk . ' [Size ' . $it->ukuran . ']' . $qtyText;
+}
+$shoeText = !empty($itemSummaryList) ? implode(', ', $itemSummaryList) : 'sepatu pesanan Anda';
+
+$waMsg = "Halo Kak *" . $order->nama_penerima . "*,\n\n";
+$waMsg .= "Kami dari Admin *QxuanStore* mengenai pesanan sepatu *" . $shoeText . "* (Invoice: *#" . $order->invoice_no . "*).\n";
+if (!empty($order->kurir)) {
+    $waMsg .= "🚚 Ekspedisi: " . $order->kurir . "\n";
+}
+if (!empty($order->no_resi)) {
+    $waMsg .= "📦 No. Resi: " . $order->no_resi . "\n";
+}
+$waMsg .= "\nMau menanyakan apakah pesanan sepatu tersebut sudah sampai di alamat Kakak?\n\n";
+$waMsg .= "Jika sudah sampai dan sesuai, mohon konfirmasinya ya Kak, atau Kakak bisa langsung pilih tombol *\"Pesanan Sudah Diterima\"* di menu riwayat pesanan akun website QxuanStore Kakak.\n\n";
+$waMsg .= "Terima kasih banyak telah berbelanja di QxuanStore! 🙏👟✨";
+
+$customerPhoneClean = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $order->no_hp));
+$waUrl = "https://api.whatsapp.com/send?phone=" . $customerPhoneClean . "&text=" . urlencode($waMsg);
+
 // Calculate steps for stepper
 $s = $order->status_order;
 $isCancelled = ($s === 'Dibatalkan');
@@ -177,7 +200,7 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
         <div class="stepper-node <?= $step2Done ? 'completed' : ($s === 'Menunggu Pembayaran' ? 'active' : '') ?>">
             <div class="stepper-title">
                 <i class="fa-solid <?= $step2Done ? 'fa-circle-check' : ($s === 'Menunggu Pembayaran' ? 'fa-clock' : 'fa-circle') ?>"></i>
-                2. Pembayaran (Midtrans)
+                2. Pembayaran
             </div>
             <div class="stepper-desc">
                 <?php if ($step2Done): ?>
@@ -246,8 +269,8 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
                     <small style="color: #64748b; font-weight: 600; text-transform: uppercase;">Penerima Paket</small>
                     <p style="font-size: 1.05rem; font-weight: 700; margin-top: 4px; color: #0f172a;"><?= htmlspecialchars($order->nama_penerima) ?></p>
                     <p style="font-size: 0.9rem; margin-top: 6px;">
-                        <a href="https://api.whatsapp.com/send?phone=<?= preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $order->no_hp)) ?>&text=Halo%20<?= urlencode($order->nama_penerima) ?>,%20kami%20dari%20Admin%20QxuanStore%20mengenai%20pesanan%20sepatu%20%23<?= $order->invoice_no ?>" target="_blank" style="color: #16a34a; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
-                            <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> <?= htmlspecialchars($order->no_hp) ?> (Chat WhatsApp)
+                        <a href="<?= $waUrl ?>" target="_blank" style="color: #16a34a; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;" title="Kirim Pesan WhatsApp Tanya Penerimaan">
+                            <i class="fa-brands fa-whatsapp" style="font-size: 1.15rem;"></i> <?= htmlspecialchars($order->no_hp) ?> (Tanya via WhatsApp)
                         </a>
                     </p>
                 </div>
