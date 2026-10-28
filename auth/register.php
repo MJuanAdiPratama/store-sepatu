@@ -79,8 +79,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p>Daftar untuk kemudahan belanja & lacak pesanan sepatu</p>
             </div>
 
-            <?= render_flash() ?>
-
             <?php if (!empty($error)): ?>
                 <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
@@ -106,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label for="password">Password</label>
                     <div class="password-input-group">
-                        <input type="password" id="password" name="password" class="form-control" placeholder="Minimal 5 karakter" required>
+                        <input type="text" id="password" name="password" class="form-control password-mask" placeholder="Minimal 5 karakter" required autocomplete="off" spellcheck="false">
                         <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', 'regPasswordIcon')" aria-label="Lihat password">
                             <i class="fa-solid fa-eye" id="regPasswordIcon"></i>
                         </button>
@@ -143,12 +141,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         const input = document.getElementById(inputId);
         const icon = document.getElementById(iconId);
         if (!input || !icon) return;
-        if (input.type === 'password') {
-            input.type = 'text';
+        if (input.classList.contains('password-mask')) {
+            input.classList.remove('password-mask');
             icon.classList.remove('fa-eye');
             icon.classList.add('fa-eye-slash');
         } else {
-            input.type = 'password';
+            input.classList.add('password-mask');
             icon.classList.remove('fa-eye-slash');
             icon.classList.add('fa-eye');
         }

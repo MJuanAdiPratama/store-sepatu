@@ -15,6 +15,6 @@ unset($_SESSION['nama_lengkap']);
 unset($_SESSION['email']);
 unset($_SESSION['no_hp']);
 unset($_SESSION['cart']);
+unset($_SESSION['flash']);
 
-set_flash('info', 'Anda telah berhasil keluar dari akun.');
 redirect(base_url('index.php'));

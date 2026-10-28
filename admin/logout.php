@@ -15,6 +15,6 @@ unset($_SESSION['admin_id']);
 unset($_SESSION['admin_username']);
 unset($_SESSION['admin_name']);
 unset($_SESSION['a_global']);
+unset($_SESSION['flash']);
 
-set_flash('info', 'Anda berhasil keluar dari sesi admin.');
 redirect(admin_url('login.php'));

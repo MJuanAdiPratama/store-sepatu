@@ -67,22 +67,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p>Selamat datang di QxuanStore</p>
             </div>
 
-            <?= render_flash() ?>
-
             <?php if (!empty($error)): ?>
                 <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
 
-            <form action="" method="POST">
+            <form action="" method="POST" autocomplete="off">
                 <div class="form-group">
                     <label for="email">Alamat Email</label>
-                    <input type="email" id="email" name="email" class="form-control" placeholder="nama@email.com" required autofocus value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
+                    <input type="email" id="email" name="email" class="form-control" placeholder="nama@email.com" required autofocus autocomplete="off" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
                     <div class="password-input-group">
-                        <input type="password" id="password" name="password" class="form-control" placeholder="Masukkan password" required>
+                        <input type="text" id="password" name="password" class="form-control password-mask" placeholder="Masukkan password" required autocomplete="off" spellcheck="false">
                         <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', 'passwordIcon')" aria-label="Lihat password">
                             <i class="fa-solid fa-eye" id="passwordIcon"></i>
                         </button>
@@ -114,12 +112,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         const input = document.getElementById(inputId);
         const icon = document.getElementById(iconId);
         if (!input || !icon) return;
-        if (input.type === 'password') {
-            input.type = 'text';
+        if (input.classList.contains('password-mask')) {
+            input.classList.remove('password-mask');
             icon.classList.remove('fa-eye');
             icon.classList.add('fa-eye-slash');
         } else {
-            input.type = 'password';
+            input.classList.add('password-mask');
             icon.classList.remove('fa-eye-slash');
             icon.classList.add('fa-eye');
         }

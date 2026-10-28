@@ -54,7 +54,7 @@ $recentOrders = db_fetch_all("
 
     <div class="stat-card">
         <div class="stat-info">
-            <h3>Pesanan Masuk</h3>
+            <h3>Total Pesanan</h3>
             <p><?= number_format($totalPesanan) ?></p>
         </div>
         <div class="stat-icon orange">

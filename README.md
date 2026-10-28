@@ -74,7 +74,7 @@ Sistem pesanan di QxuanStore memiliki siklus 5 tahap yang transparan dari awal b
 5. Status pesanan seketika berubah dari `"Menunggu Pembayaran"` menjadi **`"Diproses"`**, serta mencatat metode pembayaran dan waktu bayar secara real-time.
 
 ### Tahap 4: Pemrosesan, Cetak Struk, & Pengiriman Produk (Admin)
-1. Admin melihat lonceng notifikasi dan badge **"Baru"** di menu *Pesanan Masuk* (`admin/orders/index.php`).
+1. Admin melihat badge notifikasi **"Baru"** di menu *Pesanan* sidebar (`admin/orders/index.php`).
 2. Admin dapat mengklik tombol **"Cetak Struk"** untuk mencetak struk fisik / PDF bukti transaksi untuk disisipkan ke dalam kardus sepatu.
 3. Nomor resi pengiriman telah otomatis terisi sesuai kurir yang dipilih pelanggan. Admin menyiapkan dan mengemas sepatu, lalu mengubah status menjadi **`"Dikirim"`**.
 4. Di panel admin, tombol aksi langsung menampilkan **"Lacak Resi Pengiriman (CekResi.com)"** untuk memonitor perjalanan paket secara langsung.
@@ -83,23 +83,21 @@ Sistem pesanan di QxuanStore memiliki siklus 5 tahap yang transparan dari awal b
 
 ## 📦 3. Logika Penerimaan Barang: Bagaimana Admin Tahu Barang Sudah Diterima?
 
-Pada transaksi e-commerce, setelah paket dikirim oleh kurir, Admin membutuhkan kepastian apakah barang sudah sampai ke tangan pembeli atau belum. Di QxuanStore, logika ini dirancang dengan **3 mekanisme saling melengkapi**:
+Pada transaksi e-commerce, setelah paket dikirim oleh kurir, Admin membutuhkan kepastian apakah barang sudah sampai ke tangan pembeli atau belum. Di QxuanStore, logika ini dirancang dengan mekanisme terintegrasi:
 
 ### Mekanisme 1: Konfirmasi Mandiri oleh Pembeli (*Customer Receipt Confirmation*) [UTAMA]
 * Ketika pesanan berstatus **`Dikirim`**, di akun pelanggan (`user/orders.php` dan `user/order-success.php`) akan muncul tombol hijau: **"Pesanan Sudah Diterima"**.
 * Begitu pembeli menerima sepatu dan memeriksa kondisinya, pembeli menekan tombol tersebut.
 * Sistem memanggil `api/confirm_order_received.php`, otomatis mengubah status pesanan menjadi **`"Selesai"`**, dan menyimpan timestamp penerimaan pada kolom **`waktu_diterima`**.
-* Di dashboard admin, status seketika terupdate menjadi **`Selesai (Sampai: Tanggal & Jam)`**. Admin langsung mengetahui dengan pasti bahwa transaksi telah sukses tanpa keraguan.
+* **Status Terkunci Otomatis (Data Integrity):** Begitu status menjadi `Selesai`, form ubah status di panel admin (`admin/orders/detail.php`) **otomatis dikunci dan dinonaktifkan**, sehingga status pesanan tidak dapat diubah-ubah lagi demi menjaga integritas data riwayat transaksi.
 
 ### Mekanisme 2: Pelacakan Resi Ekspedisi Real-Time (*Live Tracking*)
 * Pada halaman detail pesanan Admin (`admin/orders/detail.php`), ketika status pesanan adalah `"Dikirim"`, tersedia tombol langsung:
   **"Lacak Resi Pengiriman (CekResi.com)"**.
 * Admin dapat memantau status fisik paket secara live (apakah *Manifested*, *On Transit*, *With Delivery Courier*, atau *Delivered*).
 
-### Mekanisme 3: Konfirmasi Langsung via WhatsApp & Manual Override Admin
-* Admin dibekali tombol pintas **"Tanya Penerimaan via WhatsApp"** yang langsung membuka obrolan ke nomor WhatsApp pembeli dengan pesan otomatis yang menanyakan apakah paket telah sampai.
-* Jika kurir sudah menyatakan *Delivered* atau pembeli mengonfirmasi via chat, Admin dapat menekan tombol:
-  **"Tandai Paket Telah Diterima (Selesai)"** di panel admin untuk menyelesaikan pesanan secara manual.
+### Mekanisme 3: Konfirmasi Langsung via WhatsApp Customer
+* Admin dibekali link/tombol **"Tanya via WhatsApp"** pada rincian data penerima paket yang langsung membuka obrolan ke nomor WhatsApp pembeli dengan pesan otomatis yang menyebutkan model sepatu, kurir, nomor resi, serta menanyakan apakah pesanan telah sampai dan mengarahkan customer untuk menekan tombol **"Pesanan Sudah Diterima"** di riwayat pesanan mereka.
 
 ---
 

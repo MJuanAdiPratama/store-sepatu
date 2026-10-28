@@ -1,10 +1,10 @@
 <?php
 /**
- * Admin - Kelola Pesanan Masuk
+ * Admin - Kelola Pesanan
  * QxuanStore - Shoe E-Commerce
  */
 
-$pageTitle = 'Manajemen Pesanan Masuk';
+$pageTitle = 'Manajemen Pesanan';
 require_once dirname(__DIR__) . '/includes/header.php';
 
 $statusFilter = trim($_GET['status'] ?? '');

@@ -29,7 +29,7 @@ if (empty($order->no_resi)) {
 }
 
 // Quick action: Mark as Delivered (Selesai)
-if (isset($_GET['action']) && $_GET['action'] === 'mark_delivered') {
+if (isset($_GET['action']) && $_GET['action'] === 'mark_delivered' && $order->status_order !== 'Selesai') {
     $now = date('Y-m-d H:i:s');
     db_execute("UPDATE tb_order SET status_order = 'Selesai', waktu_diterima = ? WHERE id_order = ?", [$now, $id]);
     set_flash('success', 'Pesanan #' . $order->invoice_no . ' berhasil ditandai SELESAI (Barang telah diterima customer)!');
@@ -38,6 +38,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'mark_delivered') {
 
 // Handle Status & Resi Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($order->status_order === 'Selesai') {
+        set_flash('error', 'Pesanan ini sudah SELESAI (barang telah diterima customer). Status pesanan sudah final dan dikunci oleh sistem.');
+        redirect(admin_url('orders/detail.php?id=' . $id));
+    }
+
     $newStatus = trim($_POST['status_order'] ?? $order->status_order);
     $kurir     = trim($_POST['kurir'] ?? '');
     $no_resi   = trim($_POST['no_resi'] ?? '');
@@ -402,34 +407,69 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
                 </div>
             <?php endif; ?>
 
-            <!-- Form Edit Status & Resi Manual -->
-            <form action="" method="POST">
-                <div class="form-group">
-                    <label for="status_order">Ubah Status Pesanan</label>
-                    <select id="status_order" name="status_order" class="form-control" style="font-weight: 600;">
-                        <option value="Menunggu Pembayaran" <?= $order->status_order === 'Menunggu Pembayaran' ? 'selected' : '' ?>>Menunggu Pembayaran</option>
-                        <option value="Diproses" <?= $order->status_order === 'Diproses' ? 'selected' : '' ?>>Diproses (Packing Produk)</option>
-                        <option value="Dikirim" <?= $order->status_order === 'Dikirim' ? 'selected' : '' ?>>Dikirim (Dalam Ekspedisi)</option>
-                        <option value="Selesai" <?= $order->status_order === 'Selesai' ? 'selected' : '' ?>>Selesai (Barang Diterima)</option>
-                        <option value="Dibatalkan" <?= $order->status_order === 'Dibatalkan' ? 'selected' : '' ?>>Dibatalkan</option>
-                    </select>
+            <?php if ($order->status_order === 'Selesai'): ?>
+                <!-- Panel Terkunci Ketika Pesanan Sudah Selesai (Diterima Customer) -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin-top: 10px;">
+                    <div style="display: flex; align-items: center; gap: 8px; color: #166534; font-weight: 700; margin-bottom: 8px; font-size: 0.95rem;">
+                        <i class="fa-solid fa-lock" style="color: #16a34a;"></i> Status Pesanan Terkunci (Selesai)
+                    </div>
+                    <p style="font-size: 0.84rem; color: #64748b; line-height: 1.5; margin-bottom: 14px;">
+                        Customer telah mengonfirmasi bahwa pesanan sepatu telah sampai dan diterima dengan baik. Untuk menjaga keaslian data riwayat transaksi, status pesanan ini sudah <strong>final</strong> dan tidak dapat diubah lagi oleh Admin.
+                    </p>
+                    <div style="background: #fff; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem; line-height: 1.8;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748b;">Status Terkunci:</span>
+                            <span class="badge badge-success"><i class="fa-solid fa-check-circle"></i> Selesai</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 6px; margin-top: 6px;">
+                            <span style="color: #64748b;">Kurir Pengiriman:</span>
+                            <strong><?= htmlspecialchars($order->kurir ?: 'Ekspedisi') ?></strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 6px; margin-top: 6px;">
+                            <span style="color: #64748b;">Nomor Resi:</span>
+                            <strong style="color: #2563eb; font-family: monospace;"><?= htmlspecialchars($order->no_resi ?: '-') ?></strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 6px; margin-top: 6px;">
+                            <span style="color: #64748b;">Waktu Diterima:</span>
+                            <strong><?= !empty($order->waktu_diterima) ? date('d M Y, H:i', strtotime($order->waktu_diterima)) . ' WIB' : 'Telah diverifikasi' ?></strong>
+                        </div>
+                    </div>
+                    <?php if (!empty($order->no_resi)): ?>
+                        <a href="https://cekresi.com/?noresi=<?= urlencode($order->no_resi) ?>" target="_blank" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; margin-top: 12px; padding: 10px;">
+                            <i class="fa-solid fa-magnifying-glass-location"></i> Cek Riwayat Pelacakan Resi
+                        </a>
+                    <?php endif; ?>
                 </div>
+            <?php else: ?>
+                <!-- Form Edit Status & Resi Manual -->
+                <form action="" method="POST">
+                    <div class="form-group">
+                        <label for="status_order">Ubah Status Pesanan</label>
+                        <select id="status_order" name="status_order" class="form-control" style="font-weight: 600;">
+                            <option value="Menunggu Pembayaran" <?= $order->status_order === 'Menunggu Pembayaran' ? 'selected' : '' ?>>Menunggu Pembayaran</option>
+                            <option value="Diproses" <?= $order->status_order === 'Diproses' ? 'selected' : '' ?>>Diproses (Packing Produk)</option>
+                            <option value="Dikirim" <?= $order->status_order === 'Dikirim' ? 'selected' : '' ?>>Dikirim (Dalam Ekspedisi)</option>
+                            <option value="Selesai" <?= $order->status_order === 'Selesai' ? 'selected' : '' ?>>Selesai (Barang Diterima)</option>
+                            <option value="Dibatalkan" <?= $order->status_order === 'Dibatalkan' ? 'selected' : '' ?>>Dibatalkan</option>
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label for="kurir">Kurir / Ekspedisi Pengiriman</label>
-                    <input type="text" id="kurir" name="kurir" class="form-control" placeholder="Contoh: JNE / J&T / SiCepat" value="<?= htmlspecialchars($order->kurir ?? '') ?>">
-                </div>
+                    <div class="form-group">
+                        <label for="kurir">Kurir / Ekspedisi Pengiriman</label>
+                        <input type="text" id="kurir" name="kurir" class="form-control" placeholder="Contoh: JNE / J&T / SiCepat" value="<?= htmlspecialchars($order->kurir ?? '') ?>">
+                    </div>
 
-                <div class="form-group">
-                    <label for="no_resi">Nomor Resi Pelacakan (Tracking No)</label>
-                    <input type="text" id="no_resi" name="no_resi" class="form-control" placeholder="Masukkan nomor resi ekspedisi..." value="<?= htmlspecialchars($order->no_resi ?? '') ?>">
-                    <small style="color: #64748b; font-size: 0.78rem; margin-top: 4px; display: block;">Nomor resi ini dapat dilacak langsung oleh Admin maupun Customer.</small>
-                </div>
+                    <div class="form-group">
+                        <label for="no_resi">Nomor Resi Pelacakan (Tracking No)</label>
+                        <input type="text" id="no_resi" name="no_resi" class="form-control" placeholder="Masukkan nomor resi ekspedisi..." value="<?= htmlspecialchars($order->no_resi ?? '') ?>">
+                        <small style="color: #64748b; font-size: 0.78rem; margin-top: 4px; display: block;">Nomor resi ini dapat dilacak langsung oleh Admin maupun Customer.</small>
+                    </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
-                    <i class="fa-solid fa-floppy-disk"></i> Simpan Pembaruan Pesanan
-                </button>
-            </form>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan Pembaruan Pesanan
+                    </button>
+                </form>
+            <?php endif; ?>
         </div>
     </div>
 </div>
