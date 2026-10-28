@@ -95,9 +95,13 @@ $orders = db_fetch_all("SELECT * FROM tb_order $where ORDER BY id_order DESC", $
                             </td>
                             <td>
                                 <span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($ord->status_order) ?></span>
-                                <?php if (!empty($ord->no_resi)): ?>
-                                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
-                                        Resi: <?= htmlspecialchars($ord->no_resi) ?>
+                                <?php if ($ord->status_order === 'Dikirim' && !empty($ord->no_resi)): ?>
+                                    <div style="font-size: 0.75rem; color: #2563eb; margin-top: 2px;">
+                                        Resi: <?= htmlspecialchars($ord->no_resi) ?> (<a href="https://cekresi.com/?noresi=<?= urlencode($ord->no_resi) ?>" target="_blank" style="color: #2563eb; text-decoration: underline;">Lacak</a>)
+                                    </div>
+                                <?php elseif ($ord->status_order === 'Selesai' && !empty($ord->waktu_diterima)): ?>
+                                    <div style="font-size: 0.75rem; color: #166534; margin-top: 2px;">
+                                        <i class="fa-solid fa-circle-check"></i> Sampai: <?= date('d/m/Y H:i', strtotime($ord->waktu_diterima)) ?>
                                     </div>
                                 <?php endif; ?>
                             </td>

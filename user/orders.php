@@ -133,6 +133,20 @@ require_once $rootPath . '/includes/header.php';
                                         <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-primary btn-sm" style="border-radius: 8px;">
                                             <i class="fa-solid fa-credit-card"></i> Bayar Sekarang (Midtrans)
                                         </a>
+                                    <?php elseif ($ord->status_order === 'Dikirim'): ?>
+                                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                            <?php if (!empty($ord->no_resi)): ?>
+                                                <a href="https://cekresi.com/?noresi=<?= urlencode($ord->no_resi) ?>" target="_blank" class="btn btn-secondary btn-sm" style="border-radius: 8px;" title="Lacak Ekspedisi">
+                                                    <i class="fa-solid fa-truck-fast"></i> Lacak Resi
+                                                </a>
+                                            <?php endif; ?>
+                                            <button type="button" onclick="confirmOrderReceived('<?= $ord->invoice_no ?>')" class="btn btn-sm" style="background: #16a34a; color: #fff; border-radius: 8px;">
+                                                <i class="fa-solid fa-box-open"></i> Pesanan Sudah Diterima
+                                            </button>
+                                            <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
+                                                <i class="fa-solid fa-receipt"></i> Detail
+                                            </a>
+                                        </div>
                                     <?php else: ?>
                                         <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
                                             <i class="fa-solid fa-receipt"></i> Detail & Bukti Bayar
@@ -160,6 +174,56 @@ require_once $rootPath . '/includes/header.php';
 </div>
 
 <script>
+function confirmOrderReceived(invoiceNo) {
+    Swal.fire({
+        title: 'Konfirmasi Pesanan Diterima',
+        text: `Apakah Anda sudah menerima paket sepatu pesanan #${invoiceNo} dalam kondisi baik?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: '<i class="fa-solid fa-check"></i> Ya, Sudah Diterima',
+        cancelButtonText: 'Belum'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Menyimpan Konfirmasi...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const formData = new FormData();
+            formData.append('invoice', invoiceNo);
+
+            fetch('<?= base_url("api/confirm_order_received.php") ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Pesanan Selesai!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonColor: '#16a34a'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Perhatian', data.message || 'Gagal mengonfirmasi', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+            });
+        }
+    });
+}
+
 function confirmUserLogout() {
     Swal.fire({
         title: 'Konfirmasi Keluar',

@@ -1,62 +1,163 @@
-## README QxuanStore - Toko Sepatu
+# 👟 QxuanStore — Modern Shoe E-Commerce Platform
 
-## Deskripsi
-  QxuanStore Toko Sepatu adalah website e-commerce yang digunakan untuk menjual produk sepatu
+QxuanStore adalah platform toko online (*e-commerce*) modern berbasis web yang dirancang khusus untuk penjualan produk sepatu sneakers dan casual. Sistem ini telah dilengkapi dengan keranjang belanja, manajemen variasi ukuran sepatu, gerbang pembayaran otomatis (*payment gateway*) **Midtrans Snap**, pelacakan ekspedisi, serta dashboard panel admin yang komprehensif.
 
-# Cara Menggunakan atau Instalasi Website ini :
+---
 
-1. pastikan anda sudah menginstall xampp dengan PHP version 8.1, jika belum ada, anda bisa Instal Xampp terlebih dahulu, dengan PHP version 8.1 (versi php yang saya gunakan)
+## 📌 1. Spesifikasi Sistem (System Specifications)
 
-2. Jika sudah ada XAMPP, Buka File Expoler dan cari folder project db_bukawarung.rar lalu Extrak File tersebut (db_bukawarung.rar)
+### A. Teknologi & Backend
+* **Bahasa Pemrograman:** PHP (Mendukung PHP 8.1 hingga PHP 8.5+)
+* **Database Management System (DBMS):** MySQL / MariaDB (Nama database default: `db_bukawarung`)
+* **Arsitektur Kode:** Modular PHP Native dengan pemisahan direktori terstruktur:
+  * `/admin`: Modul pengelolaan inventaris toko, kategori, dan pesanan masuk.
+  * `/user`: Modul area pelanggan (profil, keranjang, checkout, riwayat pesanan).
+  * `/auth`: Modul otentikasi login & registrasi pelanggan.
+  * `/api`: Endpoint REST JSON untuk Webhook Midtrans dan konfirmasi penerimaan pesanan.
+  * `/config`: Konfigurasi database, session guard, helpers, dan kredensial Midtrans.
+  * `/includes`: Template header dan footer konsisten.
 
-3. Jika sudah di extrak, pindahkan folder db_bukawarung dengan cara copy(CTRL + C) folder nya nya ke Data C>xampp>htdocs> lalu paste (CTRL + V)
+### B. Payment Gateway & Integrasi Eksternal
+* **Payment Gateway:** **Midtrans Snap API** (Sandbox Mode siap uji & Production Ready).
+* **Metode Pembayaran:** 
+  * **QRIS Otomatis:** GoPay, ShopeePay, DANA, LinkAja, BCA QRIS.
+  * **Virtual Account:** BCA, BNI, BRI, Bank Mandiri, Bank Permata.
+  * **Transfer Bank Otomatis & Kartu Kredit.**
+* **Pelacakan Ekspedisi:** Tautan pelacakan resi instan nasional via integrasi CekResi.com dan kurir ekspedisi (J&T Express, JNE, SiCepat, dll).
 
-4. Lalu buka folder yang sudah dipaste tadi(db_bukawarung), disitu sudah saya masukan file sql(file yang berisi struktur database) nya untuk dihubungkan ke database, lalu kita akan memasukan file tersebut ke database phpmyadmin
+### C. Keamanan Sistem
+* **Enkripsi Password:** Algoritma Bcrypt melalui `password_hash()` dan `password_verify()`.
+* **Proteksi Database:** Menggunakan MySQL Prepared Statements (`mysqli_prepare` / binding parameters) untuk proteksi total dari serangan SQL Injection.
+* **Proteksi XSS:** Sanitasi output dengan `htmlspecialchars()`.
+* **Access Control:** Proteksi sesi terpisah antara hak akses Pelanggan (`require_user()`) dan Administrator (`require_admin()`).
 
-5. buka Aplikasi XAMPP nya, lalu klik start pada action Apache dan MYSQL, lalu klik admin disamping tombol stop dibagian mysql, atau bisa juga kita search dibrowser dengan cara ketik http://localhost/phpmyadmin/
+### D. Tampilan & UI/UX
+* **Styling:** Modern CSS3 murni (CSS Custom Properties/Variables, Flexbox, CSS Grid Responsive).
+* **Komponen Interaktif:** SweetAlert2 (Modal alert, pop-up konfirmasi, loading status).
+* **Ikon:** FontAwesome 6 Pro/Free CDN.
+* **Tipografi:** Google Font *Plus Jakarta Sans*.
 
-6. Jika sudah masuk ke menu phpmyadmin, kita akan buat database baru dengan cara klik New atau Baru disebelah kiri lalu buat database dengan nama db_bukawarung, atau bisa juga dengan script yaitu klik kolom SQL yang ada di bar atas, lalu masukan script CREATE DATABASE `db_bukawarung` lalu klik kirim
+---
 
-7. Jika kita klik database db_bukawarung yang sudah dibuat tadi, struktur database nya kosong atau tidak ada, disini kita akan mengimport dengan struktur database yang sudah saya buat dan saya masukan di folder yang sudah di extrak sebelumnya dengan nama db_bukawarung dengan tipe SQL File, di menu halaman phpmyadmin, klik database yang sudah dibuat(db_bukawarung) lalu klik Import di menu bar atas, jika sudah di klik pada menu berkas untuk impor : ada bacaan Choose file atau pilih file, lalu kita klik menu file Choose file lalu kita cari file database yang sudah dibuat dengan cara klik local data C>XAMPP>htdocs> pilih folder db_bukawarung lalu Klik folder tersebut, jika sudah di klik scrool kebawah ada file db_bukawarung dengan type : SQL File, lalu kita klik file tersebut jika sudah klik file databasenya nanti dimenu import pada phpmyadmin di bagian bawah ada tombol kirim lalu klik tombol kirim, jika sudah berhasil akan muncul tampilan yang ada ceklis hijau yang artinya sudah berhasil mengimport strutur databasenya, klik database db_bukawarung maka akan muncul beberapa table seperti, tb_admin, tb_category, dan tb_produk
+## 🔄 2. Alur Kerja Sistem (Business Logic & Order Lifecycle)
 
-8. Jika sudah berhasil import file database, konfigurasikan koneksi database MySQL dengan cara buka file db_bukawarung dengan text editor (gunakan text editor sesuai keinginan anda). Cek pada file koneksi.php nya
+Sistem pesanan di QxuanStore memiliki siklus 5 tahap yang transparan dari awal belanja hingga sepatu diterima:
 
-```php
-   <?php
-   $koneksi = new mysqli("localhost","root","","db_bukawarung");
-   ?>
-
-   $servername= "localhost"; // nama host database
-   $username = "root"; // username database
-   $password= ""; //password database
-   $dbname = "db_bukawarung"; // nama database
+```
+[1. Pilih Sepatu & Size] ──> [2. Checkout & Buat Pesanan] ──> [3. Bayar via Midtrans]
+                                                                        │ (Otomatis)
+                                                                        ▼
+[5. Pesanan Selesai] <────── [4. Pengiriman & Resi] <─────── [Status: Diproses]
+  (Barang Diterima)            (Admin Input No Resi)           (Packing Sepatu)
 ```
 
-   pastikan nama file nya sesuai dengan yang terdapat pada PhpMyAdmin yaitu nama database nya 'db_bukawarung'(sesuaikan dengan file database yang terdapat pada Pada PhpMyAdmin) atau sesuaikan dengan pengaturan anda
+### Tahap 1: Pemilihan Sepatu & Ukuran (Customer)
+1. Pelanggan menjelajahi katalog sepatu di halaman beranda atau katalog produk.
+2. Memilih ukuran sepatu yang tersedia (Size 38 s/d 44). Stok ukuran berkurang secara otomatis ketika pesanan dibuat.
+3. Menambahkan sepatu ke keranjang belanja (`user/cart.php`).
 
-9. Jika sudah import file/struktur databasenya dan sudah dicek dibagian koneksinya, kita akan masuk mengakses ke website yang sudah dibuat yaitu dengan cara search di browser, ketik URL http://localhost/store-sepatu/index.php lalu klik enter
+### Tahap 2: Checkout & Pemesanan (Customer)
+1. Pelanggan menuju halaman checkout (`user/checkout.php`).
+2. Data nama, nomor WhatsApp, dan alamat domisili terisi otomatis dari profil pelanggan.
+3. Pelanggan memilih kurir ekspedisi (J&T, JNE, SiCepat, POS Indonesia) dan menambahkan catatan pesanan.
+4. Sistem membuat data pesanan di tabel `tb_order` dengan status awal **`Menunggu Pembayaran`** dan nomor Invoice unik (contoh: `INV-20261028-XXXXXX`).
 
-10. pada halaman index disitu untuk user membeli barang, dan memilih barang mana yang ingin dibeli setelah itu akan diarahkan ke WhatsApp admin untuk memesan produk tersebut.
+### Tahap 3: Pembayaran Otomatis via Midtrans Gateway
+1. Pelanggan diarahkan ke halaman pembayaran (`user/order-success.php`).
+2. Sistem otomatis memanggil API Midtrans untuk mendapatkan **Snap Token**.
+3. Pelanggan mengklik tombol **"Bayar Sekarang via Midtrans Gateway"** untuk membuka pop-up Snap, atau menggunakan tombol **"Simulasi Bayar Langsung"** untuk pengujian lokal.
+4. **Verifikasi Otomatis:** Setelah pembayaran lunas, Midtrans mengirimkan notifikasi callback ke `api/midtrans_callback.php` dan `api/verify_payment.php`.
+5. Status pesanan seketika berubah dari `"Menunggu Pembayaran"` menjadi **`"Diproses"`**, serta mencatat metode pembayaran dan waktu bayar.
 
-11. dan untuk admin kita bisa ketik URL http:/localhost/store-sepatu/login.php halaman ini untuk login sebagai admin
+### Tahap 4: Pemrosesan & Pengemasan Produk (Admin)
+1. Admin melihat pesanan baru berstatus `"Diproses"` di Dashboard Admin (`admin/orders/index.php`).
+2. Admin mengemas sepatu sesuai model dan ukuran yang tertera pada rincian pesanan.
+3. Admin menyerahkan paket ke pihak ekspedisi dan mendapatkan Nomor Resi Pengiriman.
+4. Di halaman detail pesanan (`admin/orders/detail.php`), Admin memasukkan kurir & **Nomor Resi**, lalu mengubah status pesanan menjadi **`"Dikirim"`**.
 
-## Akun Admin
+---
 
-12. Akun Admin nya :
+## 📦 3. Logika Penerimaan Barang: Bagaimana Admin Tahu Barang Sudah Diterima?
 
-* Username : admin
-* Password : 12345
+Pada transaksi e-commerce, setelah paket dikirim oleh kurir, Admin membutuhkan kepastian apakah barang sudah sampai ke tangan pembeli atau belum. Di QxuanStore, logika ini dirancang dengan **3 mekanisme saling melengkapi**:
 
-13. Fitur Admin :
+### Mekanisme 1: Konfirmasi Mandiri oleh Pembeli (*Customer Receipt Confirmation*) [UTAMA]
+* Ketika pesanan berstatus **`Dikirim`**, di akun pelanggan (`user/orders.php` dan `user/order-success.php`) akan muncul tombol hijau: **"Pesanan Sudah Diterima"**.
+* Begitu pembeli menerima sepatu dan memeriksa kondisinya, pembeli menekan tombol tersebut.
+* Sistem memanggil `api/confirm_order_received.php`, otomatis mengubah status pesanan menjadi **`"Selesai"`**, dan menyimpan timestamp penerimaan pada kolom **`waktu_diterima`**.
+* Di dashboard admin, status seketika terupdate menjadi **`Selesai (Sampai: Tanggal & Jam)`**. Admin langsung mengetahui dengan pasti bahwa transaksi telah sukses tanpa keraguan.
 
-   * Dashboard = Didalam Dashboard terdapat pemberitahuan bahwa admin login 
-   * Profile = Di halaman profile ini admin bisa mengubah data profile admin seperti nama,no telephone,email,alamat,dan password
-   * Kategory = Di halaman Kategory kita bisa menambahkan kategory barang dan juga bisa mengubah dan menghapus data kategory barang
-   * Produk = Di halaman produk ini admin bisa menambah data produk sesuai kategory nya, bisa mengubah status produk in stock atau sold out dan juga bisa mengubah dan menghapus data produk yang ada di dalam nya.
-   * Logout = Logout ini berfungsi untuk keluar dari halaman admin dan akan diarahkan ke halaman login.php
+### Mekanisme 2: Pelacakan Resi Ekspedisi Real-Time (*Live Tracking*)
+* Pada halaman detail pesanan Admin (`admin/orders/detail.php`), ketika status pesanan adalah `"Dikirim"`, tersedia tombol langsung:
+  **"Lacak Resi Pengiriman (CekResi.com)"**.
+* Admin dapat memantau status fisik paket secara live (apakah *Manifested*, *On Transit*, *With Delivery Courier*, atau *Delivered*).
 
-14. Fitur User :
+### Mekanisme 3: Konfirmasi Langsung via WhatsApp & Manual Override Admin
+* Admin dibekali tombol pintas **"Tanya Penerimaan via WhatsApp"** yang langsung membuka obrolan ke nomor WhatsApp pembeli dengan pesan otomatis yang menanyakan apakah paket telah sampai.
+* Jika kurir sudah menyatakan *Delivered* atau pembeli mengonfirmasi via chat, Admin dapat menekan tombol:
+  **"Tandai Paket Telah Diterima (Selesai)"** di panel admin untuk menyelesaikan pesanan secara manual.
 
-    * Home = Di halaman ini berisikan pencarian produk yang dicari dan ada juga produk yang dijual seperti gambar,nama produk dan harga produk
-    * Detail Produk = Di halaman ini user harus klik gambar produk yang ada di menu lalu akan dibawa ke detail produk dan jika ingin memesan produk, user bisa klik logo WhatsApp setelah itu user akan diarahkan ke WhatsApp admin untuk melakukan pemesanan
-    * Logout : Logout ini berfungsi untuk keluar dari halaman user dan akan diarahkan ke halaman login.php
+---
+
+## 🗄️ 4. Struktur Database Utama
+
+| Nama Tabel | Deskripsi & Fungsi |
+|---|---|
+| `tb_admin` | Data akun administrator (ID, username, password hash, email, no HP, alamat). |
+| `tb_user` | Data akun pelanggan (ID, nama lengkap, email, password hash, no WhatsApp, alamat domisili). |
+| `tb_category` | Kategori produk sepatu (Sneakers, Casual, Running, Formal, dll). |
+| `tb_produk` | Master data katalog sepatu (nama produk, kategori, harga, deskripsi, gambar, status). |
+| `tb_produk_size` | Manajemen varian ukuran (size 38-44) dan stok fisik per ukuran. |
+| `tb_order` | Header transaksi pesanan (invoice_no, total_bayar, status_order, metode_pembayaran, waktu_bayar, waktu_diterima, kurir, no_resi). |
+| `tb_order_detail`| Rincian item per pesanan (id_order, id_produk, nama_produk, ukuran, harga, qty, subtotal). |
+
+### Siklus Status Pesanan (`status_order`):
+1. **`Menunggu Pembayaran`** — Pesanan baru dibuat, menunggu pembayaran customer.
+2. **`Diproses`** — Pembayaran lunas via Midtrans Gateway, barang sedang disiapkan toko.
+3. **`Dikirim`** — Barang telah diserahkan ke ekspedisi kurir, nomor resi telah diinput.
+4. **`Selesai`** — Barang telah diterima customer dan transaksi selesai.
+5. **`Dibatalkan`** — Pesanan dibatalkan (kadaluarsa/permintaan khusus).
+
+---
+
+## 🚀 5. Panduan Instalasi & Penggunaan
+
+### Kebutuhan Sistem:
+* Web Server: Apache (Laragon / XAMPP)
+* PHP Versi: PHP 8.1 / 8.2 / 8.3 / 8.4 / 8.5+
+* Database: MySQL / MariaDB
+* Ekstensi PHP yang dibutuhkan: `mysqli`, `curl`, `json`, `session`, `mbstring`.
+
+### Langkah Instalasi:
+1. Pindahkan folder project `store-sepatu` ke direktori web server:
+   * **Laragon:** `C:\laragon\www\store-sepatu`
+   * **XAMPP:** `C:\xampp\htdocs\store-sepatu`
+2. Nyalakan layanan Apache dan MySQL pada control panel Laragon atau XAMPP.
+3. Buka browser dan akses **phpMyAdmin** (`http://localhost/phpmyadmin/`).
+4. Buat database baru bernama:
+   ```sql
+   CREATE DATABASE db_bukawarung;
+   ```
+5. Buka berkas [config/database.php](file:///c:/laragon/www/store-sepatu/config/database.php) dan sesuaikan kredensial jika menggunakan password:
+   ```php
+   $hostname = 'localhost';
+   $username = 'root';
+   $password = '';
+   $dbname   = 'db_bukawarung';
+   ```
+6. Buka website di browser:
+   * **Halaman Toko (Customer):** `http://localhost/store-sepatu/index.php`
+   * **Halaman Panel Admin:** `http://localhost/store-sepatu/admin/login.php`
+
+---
+
+## 🔐 6. Akun Default untuk Pengujian
+
+### Akun Administrator Toko:
+* **URL Login:** `http://localhost/store-sepatu/admin/login.php`
+* **Username:** `admin`
+* **Password:** `12345`
+
+### Akun Pelanggan (Customer):
+* **URL Login:** `http://localhost/store-sepatu/auth/login.php`
+* Pelanggan dapat mendaftar akun baru melalui tombol **"Daftar Akun Baru"** atau menggunakan akun customer terdaftar.

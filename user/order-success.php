@@ -107,14 +107,107 @@ if ($order->status_order === 'Dibatalkan') $statusBadgeClass = 'badge-danger';
             </div>
         </div>
 
-    <?php else: ?>
-        <!-- Card 1: Pembayaran Berhasil (Diproses / Selesai) -->
-        <div style="background: #fff; padding: 36px 30px; border-radius: 16px; border: 1px solid #e2e8f0; text-align: center; margin-bottom: 30px; box-shadow: var(--shadow-sm);">
+    <?php elseif ($order->status_order === 'Dikirim'): ?>
+        <!-- Card 1: Pesanan Sedang Dikirim -->
+        <div style="background: #fff; padding: 36px 30px; border-radius: 16px; border: 1px solid #bfdbfe; text-align: center; margin-bottom: 30px; box-shadow: var(--shadow-sm);">
+            <div style="width: 76px; height: 76px; border-radius: 50%; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; margin: 0 auto 16px;">
+                <i class="fa-solid fa-truck-fast"></i>
+            </div>
+            
+            <span class="badge badge-primary" style="font-size: 0.85rem; padding: 6px 14px; margin-bottom: 8px;">
+                <i class="fa-solid fa-truck-fast"></i> Pesanan Sedang Dikirim
+            </span>
+
+            <h1 style="font-size: 1.85rem; font-weight: 800; color: #0f172a; margin-top: 8px; margin-bottom: 6px;">
+                Sepatu Anda Sedang Dalam Perjalanan!
+            </h1>
+            <p style="color: #64748b; font-size: 0.95rem;">
+                No. Invoice: <strong style="color: #2563eb;">#<?= htmlspecialchars($order->invoice_no) ?></strong>
+            </p>
+
+            <div style="margin: 24px auto; max-width: 520px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; text-align: left;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
+                    <span style="color: #64748b;">Kurir Pengiriman:</span>
+                    <strong style="color: #0f172a;"><?= htmlspecialchars($order->kurir ?: 'Ekspedisi') ?></strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
+                    <span style="color: #64748b;">Nomor Resi:</span>
+                    <strong style="color: #2563eb; font-family: monospace; font-size: 1.05rem;"><?= htmlspecialchars($order->no_resi ?: 'Sedang diinput') ?></strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.92rem; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
+                    <span style="color: #64748b;">Status Pembayaran:</span>
+                    <strong style="color: #166534;"><i class="fa-solid fa-circle-check"></i> Lunas via <?= htmlspecialchars($order->metode_pembayaran ?? 'Midtrans') ?></strong>
+                </div>
+            </div>
+
+            <!-- Customer Receipt Confirmation CTA -->
+            <div style="max-width: 480px; margin: 0 auto; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 18px; border-radius: 12px; margin-bottom: 12px;">
+                <p style="font-size: 0.88rem; color: #166534; font-weight: 600; margin-bottom: 12px;">
+                    Sudah menerima dan memeriksa sepatu pesanan Anda? Konfirmasikan penerimaan agar transaksi dinyatakan selesai:
+                </p>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button type="button" onclick="confirmOrderReceived('<?= $order->invoice_no ?>')" class="btn btn-sm" style="background: #16a34a; color: #fff; padding: 10px 18px; font-weight: 700; border-radius: 8px;">
+                        <i class="fa-solid fa-box-open"></i> Pesanan Sudah Saya Terima
+                    </button>
+                    <?php if (!empty($order->no_resi)): ?>
+                        <a href="https://cekresi.com/?noresi=<?= urlencode($order->no_resi) ?>" target="_blank" class="btn btn-secondary btn-sm" style="padding: 10px 16px; border-radius: 8px;">
+                            <i class="fa-solid fa-magnifying-glass-location"></i> Cek Resi Pengiriman
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+    <?php elseif ($order->status_order === 'Selesai'): ?>
+        <!-- Card 1: Pesanan Selesai -->
+        <div style="background: #fff; padding: 36px 30px; border-radius: 16px; border: 1px solid #86efac; text-align: center; margin-bottom: 30px; box-shadow: var(--shadow-sm);">
             <div style="width: 76px; height: 76px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; margin: 0 auto 16px;">
                 <i class="fa-solid fa-circle-check"></i>
             </div>
             
             <span class="badge badge-success" style="font-size: 0.85rem; padding: 6px 14px; margin-bottom: 8px;">
+                <i class="fa-solid fa-circle-check"></i> Pesanan Selesai
+            </span>
+
+            <h1 style="font-size: 1.85rem; font-weight: 800; color: #0f172a; margin-top: 8px; margin-bottom: 6px;">
+                Transaksi Berhasil Selesai!
+            </h1>
+            <p style="color: #64748b; font-size: 0.95rem;">
+                No. Invoice: <strong style="color: #2563eb;">#<?= htmlspecialchars($order->invoice_no) ?></strong>
+            </p>
+
+            <div style="margin: 24px auto; max-width: 520px; padding: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; text-align: left;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
+                    <span style="color: #166534;">Metode Pembayaran:</span>
+                    <strong style="color: #14532d;"><?= htmlspecialchars($order->metode_pembayaran ?? 'Midtrans Payment Gateway') ?></strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
+                    <span style="color: #166534;">Waktu Pembayaran:</span>
+                    <strong style="color: #14532d;"><?= !empty($order->waktu_bayar) ? date('d M Y, H:i', strtotime($order->waktu_bayar)) : date('d M Y, H:i', strtotime($order->created_at)) ?> WIB</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
+                    <span style="color: #166534;">Waktu Diterima:</span>
+                    <strong style="color: #14532d;"><?= !empty($order->waktu_diterima) ? date('d M Y, H:i', strtotime($order->waktu_diterima)) . ' WIB' : 'Telah Diterima' ?></strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 1rem; padding-top: 8px; border-top: 1px dashed #86efac;">
+                    <span style="font-weight: 700; color: #166534;">Total Dibayar:</span>
+                    <strong style="color: #15803d; font-size: 1.15rem;"><?= format_rupiah($order->total_bayar) ?></strong>
+                </div>
+            </div>
+
+            <p style="color: #15803d; font-weight: 600; font-size: 0.92rem;">
+                <i class="fa-solid fa-heart" style="color: #ef4444;"></i> Terima kasih telah berbelanja di QxuanStore! Semoga sepatu baru Anda nyaman digunakan.
+            </p>
+        </div>
+
+    <?php else: ?>
+        <!-- Card 1: Pembayaran Berhasil (Diproses) -->
+        <div style="background: #fff; padding: 36px 30px; border-radius: 16px; border: 1px solid #e2e8f0; text-align: center; margin-bottom: 30px; box-shadow: var(--shadow-sm);">
+            <div style="width: 76px; height: 76px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; margin: 0 auto 16px;">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            
+            <span class="badge badge-info" style="font-size: 0.85rem; padding: 6px 14px; margin-bottom: 8px;">
                 <i class="fa-solid fa-circle-check"></i> Pembayaran Berhasil &bull; <?= htmlspecialchars($order->status_order) ?>
             </span>
 
@@ -141,7 +234,7 @@ if ($order->status_order === 'Dibatalkan') $statusBadgeClass = 'badge-danger';
             </div>
 
             <p style="color: #15803d; font-weight: 600; font-size: 0.92rem;">
-                <i class="fa-solid fa-boxes-packing"></i> Pesanan sepatu Anda sedang dipersiapkan dan segera dikirim ke alamat tujuan!
+                <i class="fa-solid fa-boxes-packing"></i> Toko sedang menyiapkan dan mengemas sepatu Anda untuk segera diserahkan ke kurir ekspedisi.
             </p>
         </div>
     <?php endif; ?>
@@ -321,6 +414,56 @@ function triggerPaymentSimulator() {
             verifyPaymentSuccess('Midtrans QRIS (GoPay/ShopeePay)');
         } else if (result.isDenied) {
             verifyPaymentSuccess('Midtrans Virtual Account (BCA)');
+        }
+    });
+}
+// Function for Customer to confirm order receipt
+function confirmOrderReceived(invoiceNo) {
+    Swal.fire({
+        title: 'Konfirmasi Pesanan Diterima',
+        text: `Apakah Anda sudah menerima paket sepatu pesanan #${invoiceNo} dalam kondisi baik?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: '<i class="fa-solid fa-check"></i> Ya, Sudah Diterima',
+        cancelButtonText: 'Belum'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Menyimpan Konfirmasi...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const formData = new FormData();
+            formData.append('invoice', invoiceNo);
+
+            fetch('<?= base_url("api/confirm_order_received.php") ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Pesanan Selesai!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonColor: '#16a34a'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Perhatian', data.message || 'Gagal mengonfirmasi', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+            });
         }
     });
 }
