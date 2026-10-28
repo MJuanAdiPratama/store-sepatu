@@ -21,9 +21,9 @@ require_once $rootPath . '/includes/header.php';
 ?>
 
 <div class="container" style="padding-top: 40px; padding-bottom: 70px;">
-    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start;">
+    <div class="profile-layout-grid">
         <!-- Customer Sidebar -->
-        <div style="background: #fff; padding: 26px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm); position: sticky; top: 100px;">
+        <div class="customer-sidebar-card">
             <div style="text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9;">
                 <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; margin: 0 auto 12px; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
                     <?= strtoupper(substr($userData->nama_lengkap, 0, 1)) ?>
@@ -119,13 +119,26 @@ require_once $rootPath . '/includes/header.php';
                                 </div>
                             <?php endif; ?>
 
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #e2e8f0; padding-top: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #e2e8f0; padding-top: 14px; flex-wrap: wrap; gap: 10px;">
                                 <div style="font-size: 0.92rem; color: #64748b;">
                                     Total: <strong style="color: #2563eb; font-size: 1.15rem;"><?= format_rupiah($ord->total_bayar) ?></strong>
+                                    <?php if (!empty($ord->metode_pembayaran) && $ord->status_order !== 'Menunggu Pembayaran'): ?>
+                                        <div style="font-size: 0.78rem; color: #166534; margin-top: 2px;">
+                                            <i class="fa-solid fa-circle-check"></i> <?= htmlspecialchars($ord->metode_pembayaran) ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
-                                <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
-                                    <i class="fa-solid fa-file-invoice"></i> Lihat Invoice
-                                </a>
+                                <div>
+                                    <?php if ($ord->status_order === 'Menunggu Pembayaran'): ?>
+                                        <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-primary btn-sm" style="border-radius: 8px;">
+                                            <i class="fa-solid fa-credit-card"></i> Bayar Sekarang (Midtrans)
+                                        </a>
+                                    <?php else: ?>
+                                        <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
+                                            <i class="fa-solid fa-receipt"></i> Detail & Bukti Bayar
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>

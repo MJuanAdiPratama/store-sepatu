@@ -42,8 +42,11 @@ function is_menu_active($keyword, $currentUri) {
 </head>
 <body>
 
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
     <!-- Sidebar Navigation -->
-    <aside class="admin-sidebar">
+    <aside class="admin-sidebar" id="adminSidebar">
         <div class="sidebar-brand">
             <i class="fa-solid fa-shoe-prints" style="color: #38bdf8; font-size: 1.4rem;"></i>
             <h2>Qxuan<span>Store</span></h2>
@@ -88,12 +91,6 @@ function is_menu_active($keyword, $currentUri) {
                 </a>
             </li>
             <li>
-                <a href="<?= base_url('index.php') ?>" target="_blank">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    <span>Lihat Toko Publik</span>
-                </a>
-            </li>
-            <li>
                 <a href="javascript:void(0)" onclick="confirmAdminLogout()">
                     <i class="fa-solid fa-arrow-right-from-bracket" style="color: #f87171;"></i>
                     <span style="color: #f87171;">Log Out</span>
@@ -108,9 +105,12 @@ function is_menu_active($keyword, $currentUri) {
 
     <!-- Main Content Area -->
     <main class="admin-main">
-        <!-- Topbar (Tombol Tambah Produk Dihilangkan Sesuai Request) -->
+        <!-- Topbar with Mobile Toggle Button -->
         <header class="admin-topbar">
-            <div class="topbar-title">
+            <div class="topbar-title" style="display: flex; align-items: center;">
+                <button type="button" class="sidebar-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle Navigation">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
                 <h1><?= $pageTitle ?? 'Dashboard Admin' ?></h1>
             </div>
             
@@ -141,6 +141,15 @@ function is_menu_active($keyword, $currentUri) {
             <?php endif; ?>
 
 <script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('adminSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (sidebar && overlay) {
+        sidebar.classList.toggle('show');
+        overlay.classList.toggle('show');
+    }
+}
+
 function confirmAdminLogout() {
     Swal.fire({
         title: 'Konfirmasi Logout',
@@ -156,5 +165,20 @@ function confirmAdminLogout() {
             window.location.href = '<?= admin_url("logout.php") ?>';
         }
     });
+}
+
+function togglePasswordVisibility(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (!input || !icon) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
 }
 </script>

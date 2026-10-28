@@ -58,7 +58,7 @@ $totalBayar = 0;
     </div>
 
     <?php if (!empty($cart)): ?>
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 32px; align-items: start;">
+        <div class="cart-layout-grid">
             <!-- Cart Table Items -->
             <div style="background: #fff; padding: 24px; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm);">
                 <div class="table-responsive">

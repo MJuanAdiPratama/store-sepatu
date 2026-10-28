@@ -78,9 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
 
 <div class="container" style="padding-top: 40px; padding-bottom: 70px;">
     <!-- Profile Grid Layout -->
-    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start;">
+    <div class="profile-layout-grid">
         <!-- Customer Sidebar -->
-        <div style="background: #fff; padding: 26px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm); position: sticky; top: 100px;">
+        <div class="customer-sidebar-card">
             <div style="text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9;">
                 <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; margin: 0 auto 12px; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
                     <?= strtoupper(substr($userData->nama_lengkap, 0, 1)) ?>
@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
         <!-- Main Content Area -->
         <div>
             <!-- Stats Highlights -->
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+            <div class="stats-grid-3">
                 <div style="background: #fff; padding: 20px; border-radius: 14px; border: 1px solid #e2e8f0; text-align: center; box-shadow: var(--shadow-sm);">
                     <small style="color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 0.75rem;">Total Pesanan</small>
                     <div style="font-size: 1.75rem; font-weight: 800; color: #2563eb; margin-top: 4px;"><?= $totalOrders ?></div>
@@ -135,101 +135,128 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                 </div>
             </div>
 
-            <!-- Profile Info Form -->
-            <div style="background: #fff; padding: 32px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 24px; box-shadow: var(--shadow-sm);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 14px;">
-                    <h2 style="font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
-                        <i class="fa-solid fa-address-card" style="color: #2563eb;"></i> Informasi Profil & Alamat
-                    </h2>
-                </div>
-
-                <?php if (!empty($error)): ?>
-                    <div class="alert alert-danger" style="margin-bottom: 20px;"><?= htmlspecialchars($error) ?></div>
-                <?php endif; ?>
-                <?php if (!empty($success)): ?>
-                    <div class="alert alert-success" style="background: #dcfce7; color: #166534; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
-                        <i class="fa-solid fa-circle-check"></i> <?= htmlspecialchars($success) ?>
+            <!-- Profile Cards Grid (2 Column Matching Admin Profile UI) -->
+            <div class="profile-cards-grid">
+                <!-- Profile Info Card -->
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-address-card" style="color: #2563eb; margin-right: 8px;"></i> Informasi Customer</h2>
                     </div>
-                <?php endif; ?>
 
-                <form action="" method="POST">
-                    <input type="hidden" name="update_profile" value="1">
+                    <?php if (!empty($error)): ?>
+                        <div class="alert alert-danger" style="margin-bottom: 20px;"><?= htmlspecialchars($error) ?></div>
+                    <?php endif; ?>
+                    <?php if (!empty($success)): ?>
+                        <div class="alert alert-success" style="background: #dcfce7; color: #166534; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
+                            <i class="fa-solid fa-circle-check"></i> <?= htmlspecialchars($success) ?>
+                        </div>
+                    <?php endif; ?>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <form action="" method="POST">
+                        <input type="hidden" name="update_profile" value="1">
+
                         <div class="form-group">
-                            <label for="nama_lengkap">Nama Lengkap</label>
+                            <label for="nama_lengkap">Nama Lengkap Customer</label>
                             <input type="text" id="nama_lengkap" name="nama_lengkap" class="form-control" value="<?= htmlspecialchars($userData->nama_lengkap) ?>" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="no_hp">Nomor WhatsApp Aktif</label>
-                            <input type="tel" id="no_hp" name="no_hp" class="form-control" value="<?= htmlspecialchars($userData->no_hp) ?>" required>
+                            <label for="no_hp">Nomor WhatsApp Customer</label>
+                            <input type="tel" id="no_hp" name="no_hp" class="form-control" placeholder="Contoh: 08123456789" value="<?= htmlspecialchars($userData->no_hp) ?>" required>
                         </div>
+
+                        <div class="form-group">
+                            <label for="email">Alamat Email Customer</label>
+                            <input type="email" id="email" class="form-control" value="<?= htmlspecialchars($userData->email) ?>" disabled style="background: #f8fafc; color: #64748b; cursor: not-allowed;">
+                            <small style="color: #64748b; font-size: 0.8rem; margin-top: 4px; display: block;"><i class="fa-solid fa-lock" style="font-size: 0.72rem;"></i> Email akun terdaftar &bull; identitas login</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="alamat">Alamat Pengiriman Utama</label>
+                            <textarea id="alamat" name="alamat" class="form-control" rows="3" placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kota, kode pos..."><?= htmlspecialchars($userData->alamat ?? '') ?></textarea>
+                            <small style="color: #64748b; font-size: 0.8rem; margin-top: 4px; display: block;">Alamat default ini akan otomatis terisi saat checkout pesanan sepatu.</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                            <i class="fa-solid fa-floppy-disk"></i> Simpan Profil Customer
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Password Change Card -->
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-key" style="color: #2563eb; margin-right: 8px;"></i> Ubah Password Customer</h2>
                     </div>
 
-                    <div class="form-group">
-                        <label for="email">Alamat Email</label>
-                        <input type="email" id="email" class="form-control" value="<?= htmlspecialchars($userData->email) ?>" disabled style="background: #f8fafc; color: #64748b; cursor: not-allowed;">
-                        <small style="color: #64748b; font-size: 0.8rem;">Email digunakan sebagai identitas akun dan tidak dapat diubah.</small>
-                    </div>
+                    <?php if (!empty($errorPass)): ?>
+                        <div class="alert alert-danger" style="margin-bottom: 20px;"><?= htmlspecialchars($errorPass) ?></div>
+                    <?php endif; ?>
+                    <?php if (!empty($successPass)): ?>
+                        <div class="alert alert-success" style="background: #dcfce7; color: #166534; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
+                            <i class="fa-solid fa-circle-check"></i> <?= htmlspecialchars($successPass) ?>
+                        </div>
+                    <?php endif; ?>
 
-                    <div class="form-group">
-                        <label for="alamat">Alamat Pengiriman Utama (Default Checkout)</label>
-                        <textarea id="alamat" name="alamat" class="form-control" rows="3" placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kota, kode pos..."><?= htmlspecialchars($userData->alamat ?? '') ?></textarea>
-                        <small style="color: #64748b; font-size: 0.8rem;">Alamat ini akan otomatis muncul saat Anda checkout sepatu.</small>
-                    </div>
+                    <form action="" method="POST">
+                        <input type="hidden" name="change_password" value="1">
 
-                    <button type="submit" class="btn btn-primary" style="padding: 12px 24px; border-radius: 10px;">
-                        <i class="fa-solid fa-floppy-disk"></i> Simpan Profil & Alamat
-                    </button>
-                </form>
-            </div>
+                        <div class="form-group">
+                            <label for="old_password">Password Saat Ini</label>
+                            <div class="password-input-group">
+                                <input type="password" id="old_password" name="old_password" class="form-control" placeholder="Masukkan password saat ini" required>
+                                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('old_password', 'uOldPassIcon')" aria-label="Lihat password">
+                                    <i class="fa-solid fa-eye" id="uOldPassIcon"></i>
+                                </button>
+                            </div>
+                        </div>
 
-            <!-- Password Security Form -->
-            <div style="background: #fff; padding: 32px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm);">
-                <h2 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 14px; display: flex; align-items: center; gap: 10px;">
-                    <i class="fa-solid fa-lock" style="color: #2563eb;"></i> Keamanan & Kata Sandi
-                </h2>
-
-                <?php if (!empty($errorPass)): ?>
-                    <div class="alert alert-danger" style="margin-bottom: 20px;"><?= htmlspecialchars($errorPass) ?></div>
-                <?php endif; ?>
-                <?php if (!empty($successPass)): ?>
-                    <div class="alert alert-success" style="background: #dcfce7; color: #166534; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">
-                        <i class="fa-solid fa-circle-check"></i> <?= htmlspecialchars($successPass) ?>
-                    </div>
-                <?php endif; ?>
-
-                <form action="" method="POST">
-                    <input type="hidden" name="change_password" value="1">
-
-                    <div class="form-group">
-                        <label for="old_password">Password Saat Ini</label>
-                        <input type="password" id="old_password" name="old_password" class="form-control" placeholder="Masukkan password saat ini" required>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                         <div class="form-group">
                             <label for="new_password">Password Baru</label>
-                            <input type="password" id="new_password" name="new_password" class="form-control" placeholder="Minimal 5 karakter" required>
+                            <div class="password-input-group">
+                                <input type="password" id="new_password" name="new_password" class="form-control" placeholder="Minimal 5 karakter" required>
+                                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('new_password', 'uNewPassIcon')" aria-label="Lihat password">
+                                    <i class="fa-solid fa-eye" id="uNewPassIcon"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="confirm_password">Konfirmasi Password Baru</label>
-                            <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Ulangi password baru" required>
+                            <div class="password-input-group">
+                                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Ulangi password baru" required>
+                                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('confirm_password', 'uConfPassIcon')" aria-label="Lihat password">
+                                    <i class="fa-solid fa-eye" id="uConfPassIcon"></i>
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    <button type="submit" class="btn btn-secondary" style="padding: 12px 24px; border-radius: 10px;">
-                        <i class="fa-solid fa-key"></i> Perbarui Kata Sandi
-                    </button>
-                </form>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                            <i class="fa-solid fa-shield-halved"></i> Perbarui Password
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+function togglePasswordVisibility(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (!input || !icon) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
 function confirmUserLogout() {
     Swal.fire({
         title: 'Konfirmasi Keluar',

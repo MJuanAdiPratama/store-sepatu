@@ -43,10 +43,6 @@ $isLoggedIn = is_user();
                             <i class="fa-solid fa-bag-shopping"></i> Belanja Sekarang
                         </a>
                     <?php endif; ?>
-                    
-                    <a href="https://api.whatsapp.com/send?phone=<?= $formattedWa ?>&text=Halo%20Admin%20QxuanStore,%20saya%20mau%20konsultasi%20seputar%20ukuran%20sepatu." class="btn btn-outline-white" target="_blank">
-                        <i class="fa-brands fa-whatsapp"></i> Tanya di WhatsApp
-                    </a>
                 </div>
             </div>
             <div style="text-align: center;">

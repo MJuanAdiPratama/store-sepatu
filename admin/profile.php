@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
 }
 ?>
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+<div class="profile-cards-grid">
     <!-- Profile Info Card -->
     <div class="card-panel">
         <div class="panel-header">
@@ -145,17 +145,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
 
             <div class="form-group">
                 <label for="old_password">Password Lama</label>
-                <input type="password" id="old_password" name="old_password" class="form-control" placeholder="Masukkan password saat ini" required>
+                <div class="password-input-group">
+                    <input type="password" id="old_password" name="old_password" class="form-control" placeholder="Masukkan password saat ini" required>
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('old_password', 'oldPassIcon')" aria-label="Lihat password">
+                        <i class="fa-solid fa-eye" id="oldPassIcon"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="form-group">
                 <label for="new_password">Password Baru</label>
-                <input type="password" id="new_password" name="new_password" class="form-control" placeholder="Minimal 5 karakter" required>
+                <div class="password-input-group">
+                    <input type="password" id="new_password" name="new_password" class="form-control" placeholder="Minimal 5 karakter" required>
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('new_password', 'newPassIcon')" aria-label="Lihat password">
+                        <i class="fa-solid fa-eye" id="newPassIcon"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="form-group">
                 <label for="confirm_password">Konfirmasi Password Baru</label>
-                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Ulangi password baru" required>
+                <div class="password-input-group">
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Ulangi password baru" required>
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('confirm_password', 'confPassIcon')" aria-label="Lihat password">
+                        <i class="fa-solid fa-eye" id="confPassIcon"></i>
+                    </button>
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary" style="margin-top: 10px;">

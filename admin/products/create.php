@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <form action="" method="POST" enctype="multipart/form-data">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="grid-2-col">
             <div class="form-group">
                 <label for="name">Nama Sepatu <span style="color: #ef4444;">*</span></label>
                 <input type="text" id="name" name="name" class="form-control" placeholder="Contoh: Ventela Basic Low Black" required value="<?= htmlspecialchars($_POST['name'] ?? '') ?>">
@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="grid-2-col">
             <div class="form-group">
                 <label for="price">Harga Sepatu (Rp) <span style="color: #ef4444;">*</span></label>
                 <input type="number" id="price" name="price" class="form-control" placeholder="Contoh: 159000" min="1000" required value="<?= htmlspecialchars($_POST['price'] ?? '') ?>">

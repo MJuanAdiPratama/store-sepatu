@@ -81,7 +81,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" class="form-control" placeholder="Masukkan password" required>
+                    <div class="password-input-group">
+                        <input type="password" id="password" name="password" class="form-control" placeholder="Masukkan password" required>
+                        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', 'passwordIcon')" aria-label="Lihat password">
+                            <i class="fa-solid fa-eye" id="passwordIcon"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div style="margin-top: 24px;">
@@ -104,5 +109,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
+    <script>
+    function togglePasswordVisibility(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (!input || !icon) return;
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+    </script>
 </body>
 </html>

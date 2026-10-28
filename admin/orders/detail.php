@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+<div class="order-detail-grid">
     <!-- Items & Customer Info -->
     <div>
         <div class="card-panel">
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <!-- Customer Detail Grid -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; background: #f8fafc; padding: 18px; border-radius: 8px;">
+            <div class="grid-2-col" style="margin-bottom: 24px; background: #f8fafc; padding: 18px; border-radius: 8px;">
                 <div>
                     <small style="color: #64748b; font-weight: 600; text-transform: uppercase;">Penerima Paket</small>
                     <p style="font-size: 1.05rem; font-weight: 700; margin-top: 4px;"><?= htmlspecialchars($order->nama_penerima) ?></p>

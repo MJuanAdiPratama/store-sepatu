@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="text" id="nama_lengkap" name="nama_lengkap" class="form-control" placeholder="Contoh: Budi Santoso" required value="<?= htmlspecialchars($_POST['nama_lengkap'] ?? '') ?>">
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div class="grid-2-col">
                     <div class="form-group">
                         <label for="email">Alamat Email</label>
                         <input type="email" id="email" name="email" class="form-control" placeholder="nama@email.com" required value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
@@ -105,7 +105,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" class="form-control" placeholder="Minimal 5 karakter" required>
+                    <div class="password-input-group">
+                        <input type="password" id="password" name="password" class="form-control" placeholder="Minimal 5 karakter" required>
+                        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', 'regPasswordIcon')" aria-label="Lihat password">
+                            <i class="fa-solid fa-eye" id="regPasswordIcon"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -133,5 +138,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
+    <script>
+    function togglePasswordVisibility(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (!input || !icon) return;
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+    </script>
 </body>
 </html>

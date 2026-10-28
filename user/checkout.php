@@ -8,6 +8,7 @@ $rootPath = dirname(__DIR__);
 require_once $rootPath . '/config/database.php';
 require_once $rootPath . '/config/helpers.php';
 require_once $rootPath . '/config/session.php';
+require_once $rootPath . '/config/midtrans.php';
 
 require_user();
 
@@ -65,6 +66,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 db_execute("UPDATE tb_produk_size SET stok = GREATEST(0, stok - ?) WHERE id_produk = ? AND ukuran = ?", [$item['qty'], $item['id_produk'], $item['ukuran']]);
             }
 
+            // Generate Midtrans Snap Token for this order
+            $newOrder = db_fetch_one("SELECT * FROM tb_order WHERE id_order = ?", [$orderId]);
+            if ($newOrder) {
+                midtrans_get_snap_token($newOrder, $cart);
+            }
+
             // Clear Cart Session
             unset($_SESSION['cart']);
 
@@ -97,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <form action="" method="POST" id="checkoutForm">
-        <div style="display: grid; grid-template-columns: 1.8fr 1.2fr; gap: 32px; align-items: start;">
+        <div class="checkout-layout-grid">
             <!-- Shipping Form -->
             <div>
                 <!-- Recipient Card -->
@@ -111,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </span>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+                    <div class="grid-2-col">
                         <div class="form-group">
                             <label for="nama_penerima">Nama Lengkap Penerima <span style="color: #ef4444;">*</span></label>
                             <input type="text" id="nama_penerima" name="nama_penerima" class="form-control" required value="<?= htmlspecialchars($_POST['nama_penerima'] ?? ($currentUser->nama_lengkap ?? '')) ?>">
@@ -146,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         Pilih jasa kurir yang Anda inginkan untuk mengantar paket sepatu Anda:
                     </p>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="expedition-grid">
                         <!-- J&T -->
                         <label style="border: 2px solid #2563eb; background: #eff6ff; padding: 14px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
                             <input type="radio" name="kurir" value="J&T Express" checked>
@@ -187,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <!-- Order Summary Card -->
-            <div style="background: #fff; padding: 26px; border-radius: 14px; border: 1px solid #e2e8f0; position: sticky; top: 100px; box-shadow: var(--shadow-sm);">
+            <div class="customer-sidebar-card" style="padding: 26px;">
                 <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
                     Rincian Pesanan Sepatu
                 </h3>
