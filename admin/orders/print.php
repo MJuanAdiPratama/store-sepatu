@@ -317,7 +317,7 @@ $storeContact = get_admin_contact();
         <div class="receipt-totals">
             <div class="total-row">
                 <span>Metode Pembayaran:</span>
-                <strong><?= htmlspecialchars($order->metode_pembayaran ?: 'Midtrans Payment Gateway') ?></strong>
+                <strong><?= htmlspecialchars($order->metode_pembayaran ?: 'QRIS / Transfer Bank') ?></strong>
             </div>
             <div class="total-row">
                 <span>Status Pembayaran:</span>

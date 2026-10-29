@@ -131,7 +131,7 @@ require_once $rootPath . '/includes/header.php';
                                 <div>
                                     <?php if ($ord->status_order === 'Menunggu Pembayaran'): ?>
                                         <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-primary btn-sm" style="border-radius: 8px;">
-                                            <i class="fa-solid fa-credit-card"></i> Bayar Sekarang (Midtrans)
+                                            <i class="fa-solid fa-credit-card"></i> Bayar Sekarang
                                         </a>
                                     <?php elseif ($ord->status_order === 'Dikirim'): ?>
                                         <div style="display: flex; gap: 8px; flex-wrap: wrap;">

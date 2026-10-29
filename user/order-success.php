@@ -1,6 +1,6 @@
 <?php
 /**
- * Order Success & Midtrans Payment Gateway Page - QxuanStore
+ * Order Success & Direct Interactive Payment Page - QxuanStore
  * Modern Shoe E-Commerce (User Area)
  */
 
@@ -8,7 +8,6 @@ $rootPath = dirname(__DIR__);
 require_once $rootPath . '/config/database.php';
 require_once $rootPath . '/config/helpers.php';
 require_once $rootPath . '/config/session.php';
-require_once $rootPath . '/config/midtrans.php';
 
 require_user();
 
@@ -29,86 +28,296 @@ $items = db_fetch_all("
     WHERE od.id_order = ?
 ", [$order->id_order]);
 
-// Generate / Get Snap Token
-$snapToken = $order->snap_token;
-if (empty($snapToken) && $order->status_order === 'Menunggu Pembayaran') {
-    $snapToken = midtrans_get_snap_token($order, $items);
-}
-
 $isWaitingPayment = ($order->status_order === 'Menunggu Pembayaran');
 $statusBadgeClass = 'badge-warning';
 if ($order->status_order === 'Diproses') $statusBadgeClass = 'badge-info';
 if ($order->status_order === 'Dikirim') $statusBadgeClass = 'badge-primary';
 if ($order->status_order === 'Selesai') $statusBadgeClass = 'badge-success';
 if ($order->status_order === 'Dibatalkan') $statusBadgeClass = 'badge-danger';
+
+// Get admin WhatsApp contact
+$adminContact = get_admin_contact();
+$adminPhone = $adminContact ? $adminContact->admin_telp : '082188997766';
+$adminPhoneClean = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $adminPhone));
+
+// Customer phone digits for Virtual Account numbers
+$customerPhoneDigits = preg_replace('/[^0-9]/', '', $order->no_hp);
+if (strlen($customerPhoneDigits) > 10) {
+    $customerPhoneDigits = substr($customerPhoneDigits, -9);
+}
+
+// Pre-filled WhatsApp confirmation message
+$waConfirmMsg = "Halo Admin QxuanStore, saya ingin mengonfirmasi pembayaran untuk pesanan sepatu:\n\n";
+$waConfirmMsg .= "🧾 No. Invoice: #" . $order->invoice_no . "\n";
+$waConfirmMsg .= "👤 Nama Penerima: " . $order->nama_penerima . "\n";
+$waConfirmMsg .= "💰 Total Tagihan: " . format_rupiah($order->total_bayar) . "\n\n";
+$waConfirmMsg .= "Berikut saya lampirkan foto bukti pembayaran/struk transfernya. Mohon segera diproses ya. Terima kasih! 🙏👟✨";
+$waConfirmUrl = "https://api.whatsapp.com/send?phone=" . $adminPhoneClean . "&text=" . urlencode($waConfirmMsg);
+
+// Dynamic QRIS QR Code URL
+$qrData = "00020101021226670014ID.LINKAJA.WWW01189360091100212345670215ID10202610280010303UME51440014ID.CO.QRIS.WWW0215ID10202610280010303UME520458125303360540" . $order->total_bayar . "5802ID5910QXUANSTORE6009TANGERANG61051554062070703A016304";
+$qrisImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=" . urlencode($qrData);
 ?>
 
-<!-- Midtrans Snap JS Script -->
-<script src="<?= MIDTRANS_SNAP_URL ?>" data-client-key="<?= MIDTRANS_CLIENT_KEY ?>"></script>
-
-<div class="container" style="padding-top: 40px; padding-bottom: 70px; max-width: 820px;">
+<div class="container" style="padding-top: 30px; padding-bottom: 70px; max-width: 840px;">
     
     <?= render_flash() ?>
 
     <?php if ($isWaitingPayment): ?>
-        <!-- Card 1: Menunggu Pembayaran & Midtrans Gateway Action -->
-        <div style="background: #fff; padding: 36px 30px; border-radius: 16px; border: 1px solid #e2e8f0; text-align: center; margin-bottom: 30px; box-shadow: var(--shadow-sm);">
-            <div style="width: 72px; height: 72px; border-radius: 50%; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin: 0 auto 16px;">
-                <i class="fa-solid fa-credit-card"></i>
-            </div>
+        <!-- Card: Menunggu Pembayaran & Interactive Payment Channels -->
+        <div style="background: #fff; padding: 32px 24px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 30px; box-shadow: var(--shadow-sm);">
             
-            <span class="badge badge-warning" style="font-size: 0.82rem; padding: 6px 14px; margin-bottom: 8px;">
-                <i class="fa-solid fa-clock"></i> Menunggu Pembayaran
-            </span>
-            
-            <h1 style="font-size: 1.85rem; font-weight: 800; color: #0f172a; margin-top: 8px; margin-bottom: 6px;">Selesaikan Pembayaran Pesanan</h1>
-            <p style="color: #64748b; font-size: 0.95rem;">
-                No. Invoice: <strong style="color: #2563eb;">#<?= htmlspecialchars($order->invoice_no) ?></strong> &bull; <?= date('d M Y, H:i', strtotime($order->created_at)) ?>
-            </p>
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div style="width: 68px; height: 68px; border-radius: 50%; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 14px;">
+                    <i class="fa-solid fa-credit-card"></i>
+                </div>
+                
+                <span class="badge badge-warning" style="font-size: 0.8rem; padding: 6px 14px; margin-bottom: 8px;">
+                    <i class="fa-solid fa-clock"></i> Menunggu Pembayaran
+                </span>
+                
+                <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a; margin-top: 8px; margin-bottom: 6px;">Selesaikan Pembayaran Pesanan</h1>
+                <p style="color: #64748b; font-size: 0.92rem;">
+                    No. Invoice: <strong style="color: #2563eb;">#<?= htmlspecialchars($order->invoice_no) ?></strong> &bull; <?= date('d M Y, H:i', strtotime($order->created_at)) ?>
+                </p>
 
-            <div style="margin: 24px auto; max-width: 480px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
-                <small style="color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 0.78rem; display: block; margin-bottom: 4px;">Total Tagihan Pembayaran</small>
-                <div style="font-size: 2.2rem; font-weight: 800; color: #2563eb; letter-spacing: -0.5px;">
-                    <?= format_rupiah($order->total_bayar) ?>
+                <!-- Total Amount Card -->
+                <div style="margin: 20px auto 0; max-width: 440px; padding: 18px 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+                    <small style="color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 0.78rem; display: block; margin-bottom: 4px;">Total Tagihan Pembayaran</small>
+                    <div style="font-size: 2.1rem; font-weight: 800; color: #2563eb; letter-spacing: -0.5px;">
+                        <?= format_rupiah($order->total_bayar) ?>
+                    </div>
                 </div>
             </div>
 
-            <!-- Payment Channels Info -->
-            <div style="margin-bottom: 24px;">
-                <small style="color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; display: block; margin-bottom: 12px;">Metode Pembayaran Tersedia</small>
-                <div style="display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;">
-                    <span style="background: #f1f5f9; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-qrcode" style="color: #ea580c;"></i> QRIS (GoPay/ShopeePay/Dana)
-                    </span>
-                    <span style="background: #f1f5f9; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-building-columns" style="color: #2563eb;"></i> Virtual Account (BCA, BNI, BRI, Mandiri)
-                    </span>
-                    <span style="background: #f1f5f9; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-credit-card" style="color: #16a34a;"></i> Transfer Bank Otomatis
-                    </span>
-                </div>
+            <!-- Payment Methods Selector (Interactive Tabs) -->
+            <div style="margin-bottom: 12px; text-align: center;">
+                <small style="color: #475569; font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; display: block; margin-bottom: 12px;">
+                    Pilih Metode Pembayaran di Bawah Ini:
+                </small>
             </div>
 
-            <!-- Primary Payment Gateway Action -->
-            <div style="max-width: 480px; margin: 0 auto;">
-                <button type="button" id="pay-button" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px 24px; font-size: 1.05rem; border-radius: 12px; box-shadow: 0 8px 20px rgba(37,99,235,0.35);">
-                    <i class="fa-solid"></i> Bayar Sekarang
+            <div class="payment-tabs-grid">
+                <button type="button" class="payment-tab-btn active" id="tabBtnQris" onclick="switchPaymentTab('qris')">
+                    <i class="fa-solid fa-qrcode" style="color: #ea580c;"></i>
+                    <div>
+                        <strong>QRIS</strong>
+                        <small style="display: block;">GoPay, OVO, Shopee, BCA</small>
+                    </div>
                 </button>
+                <button type="button" class="payment-tab-btn" id="tabBtnVa" onclick="switchPaymentTab('va')">
+                    <i class="fa-solid fa-building-columns" style="color: #2563eb;"></i>
+                    <div>
+                        <strong>Virtual Account</strong>
+                        <small style="display: block;">BCA, Mandiri, BNI, BRI</small>
+                    </div>
+                </button>
+                <button type="button" class="payment-tab-btn" id="tabBtnTransfer" onclick="switchPaymentTab('transfer')">
+                    <i class="fa-solid fa-money-bill-transfer" style="color: #16a34a;"></i>
+                    <div>
+                        <strong>Transfer Bank</strong>
+                        <small style="display: block;">BCA & Mandiri Manual</small>
+                    </div>
+                </button>
+            </div>
 
-                <!-- Sandbox Testing Simulation Button -->
-                <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #e2e8f0;">
-                    <button type="button" onclick="triggerPaymentSimulator()" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 0.85rem; border-radius: 10px;">
-                        <i class="fa-solid fa-bolt-lightning" style="color: #f59e0b;"></i> Simulasi Bayar Langsung (Testing Sandbox)
-                    </button>
-                    <small style="display: block; color: #64748b; font-size: 0.78rem; margin-top: 6px;">
-                        lakukan pembayaran untuk perubahan status otomatis menjadi <strong>Diproses</strong> dan pesanan akan disiapkan, terimakasih.
-                    </small>
+            <!-- ===================================================================
+                 TAB 1: QRIS PAYMENT PANE
+                 =================================================================== -->
+            <div class="payment-tab-pane active" id="paneQris">
+                <div class="qris-card">
+                    <div class="qris-header">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-qrcode" style="font-size: 1.2rem;"></i>
+                            <strong style="font-size: 0.95rem; letter-spacing: 0.5px;">QRIS</strong>
+                        </div>
+                        <span style="font-size: 0.75rem; background: rgba(255,255,255,0.25); padding: 3px 8px; border-radius: 4px; font-weight: 700;">GPN / Bank & E-Wallet</span>
+                    </div>
+
+                    <div class="qris-body">
+                        <div style="font-weight: 800; font-size: 1rem; color: #0f172a; margin-bottom: 2px;">QXUANSTORE SHOES</div>
+                        <small style="color: #64748b; font-size: 0.78rem; display: block; margin-bottom: 12px;">NMID: ID1026102800192 &bull; A01</small>
+
+                        <div class="qris-img-container">
+                            <img src="<?= $qrisImageUrl ?>" alt="QRIS Barcode" class="qris-img" id="qrisImage">
+                        </div>
+
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 14px;">
+                            <span style="font-size: 0.8rem; color: #64748b; display: block;">Total Pembayaran:</span>
+                            <strong style="font-size: 1.25rem; color: #0f172a; font-weight: 800;"><?= format_rupiah($order->total_bayar) ?></strong>
+                        </div>
+
+                        <a href="<?= $qrisImageUrl ?>" target="_blank" download="QRIS-<?= $order->invoice_no ?>.png" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px;">
+                            <i class="fa-solid fa-download"></i> Unduh / Buka Gambar QRIS Penuh
+                        </a>
+                    </div>
+                </div>
+
+                <div style="max-width: 520px; margin: 0 auto 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; font-size: 0.85rem; line-height: 1.6; color: #334155;">
+                    <strong style="color: #0f172a; display: block; margin-bottom: 8px; font-size: 0.9rem;">
+                        <i class="fa-solid fa-circle-info" style="color: #2563eb;"></i> Cara Pembayaran via QRIS:
+                    </strong>
+                    <ol style="margin-left: 18px; margin-bottom: 0;">
+                        <li>Buka aplikasi <strong>BCA Mobile, Livin' Mandiri, GoPay, OVO, DANA, ShopeePay</strong>, atau e-wallet/m-banking lainnya.</li>
+                        <li>Pilih menu <strong>Scan QR / Bayar QRIS</strong>.</li>
+                        <li>Arahkan kamera HP ke barcode QRIS di atas.</li>
+                        <li>Pastikan nama merchant adalah <strong>QXUANSTORE SHOES</strong> dan nominal tagihan sesuai (<?= format_rupiah($order->total_bayar) ?>).</li>
+                        <li>Selesaikan pembayaran dan simpan bukti transaksi Anda.</li>
+                    </ol>
                 </div>
             </div>
+
+            <!-- ===================================================================
+                 TAB 2: VIRTUAL ACCOUNT PANE
+                 =================================================================== -->
+            <div class="payment-tab-pane" id="paneVa">
+                <div style="max-width: 520px; margin: 0 auto 24px;">
+                    
+                    <!-- Bank Pills Selection -->
+                    <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-sm btn-primary" id="btnVaBca" onclick="switchVaBank('bca')" style="padding: 7px 14px; border-radius: 8px;">BCA VA</button>
+                        <button type="button" class="btn btn-sm btn-secondary" id="btnVaMandiri" onclick="switchVaBank('mandiri')" style="padding: 7px 14px; border-radius: 8px;">Mandiri VA</button>
+                        <button type="button" class="btn btn-sm btn-secondary" id="btnVaBni" onclick="switchVaBank('bni')" style="padding: 7px 14px; border-radius: 8px;">BNI VA</button>
+                        <button type="button" class="btn btn-sm btn-secondary" id="btnVaBri" onclick="switchVaBank('bri')" style="padding: 7px 14px; border-radius: 8px;">BRI VA</button>
+                    </div>
+
+                    <!-- VA Detail Card -->
+                    <div style="background: #fff; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <strong style="color: #0f172a; font-size: 1rem;" id="vaBankName">BCA Virtual Account</strong>
+                            <span class="badge badge-info" style="font-size: 0.72rem;">Verifikasi Otomatis</span>
+                        </div>
+
+                        <label style="font-size: 0.78rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Nomor Virtual Account</label>
+                        <div class="copy-box">
+                            <span id="vaNumberText">88000<?= $customerPhoneDigits ?></span>
+                            <button type="button" class="copy-btn" id="btnCopyVa" onclick="copyToClipboard('vaNumberText', 'btnCopyVa')">
+                                <i class="fa-solid fa-copy"></i> Salin
+                            </button>
+                        </div>
+
+                        <label style="font-size: 0.78rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-top: 10px; display: block;">Total Tagihan Pembayaran</label>
+                        <div class="copy-box" style="font-size: 1.1rem; color: #2563eb;">
+                            <span id="vaAmountText"><?= format_rupiah($order->total_bayar) ?></span>
+                            <button type="button" class="copy-btn" id="btnCopyVaAmount" onclick="copyRawValue('<?= (int)$order->total_bayar ?>', 'btnCopyVaAmount')">
+                                <i class="fa-solid fa-copy"></i> Salin Nominal
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Instructions -->
+                    <div style="margin-top: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; font-size: 0.85rem; line-height: 1.6; color: #334155;">
+                        <strong style="color: #0f172a; display: block; margin-bottom: 6px;">Cara Bayar via m-Banking:</strong>
+                        <ol style="margin-left: 18px; margin-bottom: 0;">
+                            <li>Buka aplikasi m-Banking Anda, pilih menu <strong>Transfer</strong> &rarr; <strong>Virtual Account</strong>.</li>
+                            <li>Masukkan Nomor Virtual Account yang telah Anda salin di atas.</li>
+                            <li>Periksa detail pembayaran (nama merchant <strong>QxuanStore</strong> & total tagihan).</li>
+                            <li>Masukkan PIN m-Banking Anda untuk menyelesaikan transaksi.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===================================================================
+                 TAB 3: MANUAL BANK TRANSFER PANE
+                 =================================================================== -->
+            <div class="payment-tab-pane" id="paneTransfer">
+                <div style="max-width: 520px; margin: 0 auto 24px;">
+                    
+                    <!-- Bank BCA -->
+                    <div style="background: #fff; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-building-columns" style="color: #2563eb; font-size: 1.2rem;"></i>
+                                <strong style="color: #0f172a; font-size: 0.98rem;">Bank BCA</strong>
+                            </div>
+                            <span style="font-size: 0.78rem; color: #64748b;">a.n <strong>QxuanStore Official</strong></span>
+                        </div>
+                        <div class="copy-box">
+                            <span id="bcaRekText">812345678901</span>
+                            <button type="button" class="copy-btn" id="btnCopyBca" onclick="copyToClipboard('bcaRekText', 'btnCopyBca')">
+                                <i class="fa-solid fa-copy"></i> Salin Rekening
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bank Mandiri -->
+                    <div style="background: #fff; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-building-columns" style="color: #ea580c; font-size: 1.2rem;"></i>
+                                <strong style="color: #0f172a; font-size: 0.98rem;">Bank Mandiri</strong>
+                            </div>
+                            <span style="font-size: 0.78rem; color: #64748b;">a.n <strong>QxuanStore Official</strong></span>
+                        </div>
+                        <div class="copy-box">
+                            <span id="mandiriRekText">1560098765432</span>
+                            <button type="button" class="copy-btn" id="btnCopyMandiri" onclick="copyToClipboard('mandiriRekText', 'btnCopyMandiri')">
+                                <i class="fa-solid fa-copy"></i> Salin Rekening
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Transfer Amount -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; text-align: center;">
+                        <span style="font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 4px;">Nominal yang Harus Ditransfer (Presisi):</span>
+                        <div style="font-size: 1.4rem; font-weight: 800; color: #2563eb; margin-bottom: 8px;">
+                            <?= format_rupiah($order->total_bayar) ?>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnCopyTransferAmount" onclick="copyRawValue('<?= (int)$order->total_bayar ?>', 'btnCopyTransferAmount')" style="padding: 6px 14px; border-radius: 6px; font-size: 0.8rem;">
+                            <i class="fa-solid fa-copy"></i> Salin Nominal Transfer
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===================================================================
+                 SECTION: BUKTI PEMBAYARAN & KONFIRMASI
+                 =================================================================== -->
+            <div style="margin-top: 24px; padding-top: 24px; border-top: 1.5px dashed #cbd5e1;">
+                <h3 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; text-align: center; margin-bottom: 6px;">
+                    <i class="fa-solid fa-shield-halved" style="color: #16a34a; margin-right: 6px;"></i> Konfirmasi Pembayaran Anda
+                </h3>
+                <p style="text-align: center; color: #64748b; font-size: 0.86rem; margin-bottom: 20px;">
+                    Setelah menyelesaikan pembayaran, Anda dapat mengunggah foto bukti transfer atau kirim langsung ke WhatsApp admin:
+                </p>
+
+                <div style="max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px;">
+                    
+                    <!-- Upload Proof Form -->
+                    <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+                        <label for="buktiInput" style="display: block; font-weight: 700; color: #1e293b; font-size: 0.88rem; margin-bottom: 6px;">
+                            <i class="fa-solid fa-image" style="color: #2563eb;"></i> Unggah Bukti Pembayaran / Struk (JPG, PNG)
+                        </label>
+                        <input type="file" id="buktiInput" accept="image/jpeg,image/png,image/webp" class="form-control" style="font-size: 0.85rem;" onchange="previewBuktiImage(this)">
+                        
+                        <!-- Image Preview Container -->
+                        <div id="previewContainer" style="display: none; margin-top: 12px; text-align: center; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <img id="previewImg" src="" alt="Pratinjau Bukti" style="max-height: 160px; max-width: 100%; border-radius: 6px; object-fit: contain;">
+                            <small style="display: block; color: #64748b; margin-top: 4px; font-size: 0.75rem;">Foto bukti siap diunggah</small>
+                        </div>
+
+                        <button type="button" onclick="submitUploadBukti()" id="btnSubmitBukti" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 12px; border-radius: 8px; font-weight: 700;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Bukti & Konfirmasi Bayar
+                        </button>
+                    </div>
+
+                    <!-- WhatsApp Confirmation Button -->
+                    <a href="<?= $waConfirmUrl ?>" target="_blank" class="btn" style="width: 100%; justify-content: center; padding: 12px 18px; background: #25d366; color: #fff; font-weight: 700; border-radius: 8px; text-decoration: none; font-size: 0.95rem; box-shadow: 0 4px 10px rgba(37,211,102,0.25);">
+                        <i class="fa-brands fa-whatsapp" style="font-size: 1.25rem;"></i> Kirim Bukti ke WhatsApp Admin
+                    </a>
+
+                    <!-- Direct Confirmation Button -->
+                    <button type="button" onclick="confirmInstantPayment()" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 10px; border-radius: 8px; font-size: 0.85rem; color: #475569;">
+                        <i class="fa-solid fa-circle-check" style="color: #2563eb;"></i> Saya Sudah Selesai Bayar (Konfirmasi Cepat)
+                    </button>
+                </div>
+            </div>
+
         </div>
 
     <?php elseif ($order->status_order === 'Dikirim'): ?>
-        <!-- Card 1: Pesanan Sedang Dikirim -->
+        <!-- Card: Pesanan Sedang Dikirim -->
         <div style="background: #fff; padding: 36px 30px; border-radius: 16px; border: 1px solid #bfdbfe; text-align: center; margin-bottom: 30px; box-shadow: var(--shadow-sm);">
             <div style="width: 76px; height: 76px; border-radius: 50%; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; margin: 0 auto 16px;">
                 <i class="fa-solid fa-truck-fast"></i>
@@ -136,7 +345,7 @@ if ($order->status_order === 'Dibatalkan') $statusBadgeClass = 'badge-danger';
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 0.92rem; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
                     <span style="color: #64748b;">Status Pembayaran:</span>
-                    <strong style="color: #166534;"><i class="fa-solid fa-circle-check"></i> Lunas via <?= htmlspecialchars($order->metode_pembayaran ?? 'Midtrans') ?></strong>
+                    <strong style="color: #166534;"><i class="fa-solid fa-circle-check"></i> Lunas via <?= htmlspecialchars($order->metode_pembayaran ?: 'QRIS / Transfer Bank') ?></strong>
                 </div>
             </div>
 
@@ -159,7 +368,7 @@ if ($order->status_order === 'Dibatalkan') $statusBadgeClass = 'badge-danger';
         </div>
 
     <?php elseif ($order->status_order === 'Selesai'): ?>
-        <!-- Card 1: Pesanan Selesai -->
+        <!-- Card: Pesanan Selesai -->
         <div style="background: #fff; padding: 36px 30px; border-radius: 16px; border: 1px solid #86efac; text-align: center; margin-bottom: 30px; box-shadow: var(--shadow-sm);">
             <div style="width: 76px; height: 76px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; margin: 0 auto 16px;">
                 <i class="fa-solid fa-circle-check"></i>
@@ -179,7 +388,7 @@ if ($order->status_order === 'Dibatalkan') $statusBadgeClass = 'badge-danger';
             <div style="margin: 24px auto; max-width: 520px; padding: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; text-align: left;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
                     <span style="color: #166534;">Metode Pembayaran:</span>
-                    <strong style="color: #14532d;"><?= htmlspecialchars($order->metode_pembayaran ?? 'Midtrans Payment Gateway') ?></strong>
+                    <strong style="color: #14532d;"><?= htmlspecialchars($order->metode_pembayaran ?: 'QRIS / Transfer Bank') ?></strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
                     <span style="color: #166534;">Waktu Pembayaran:</span>
@@ -201,7 +410,7 @@ if ($order->status_order === 'Dibatalkan') $statusBadgeClass = 'badge-danger';
         </div>
 
     <?php else: ?>
-        <!-- Card 1: Pembayaran Berhasil (Diproses) -->
+        <!-- Card: Pembayaran Berhasil & Diproses -->
         <div style="background: #fff; padding: 36px 30px; border-radius: 16px; border: 1px solid #e2e8f0; text-align: center; margin-bottom: 30px; box-shadow: var(--shadow-sm);">
             <div style="width: 76px; height: 76px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; margin: 0 auto 16px;">
                 <i class="fa-solid fa-circle-check"></i>
@@ -221,7 +430,7 @@ if ($order->status_order === 'Dibatalkan') $statusBadgeClass = 'badge-danger';
             <div style="margin: 24px auto; max-width: 520px; padding: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; text-align: left;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
                     <span style="color: #166534;">Metode Pembayaran:</span>
-                    <strong style="color: #14532d;"><?= htmlspecialchars($order->metode_pembayaran ?? 'Midtrans Payment Gateway') ?></strong>
+                    <strong style="color: #14532d;"><?= htmlspecialchars($order->metode_pembayaran ?: 'QRIS / Transfer Bank') ?></strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
                     <span style="color: #166534;">Waktu Pembayaran:</span>
@@ -231,6 +440,17 @@ if ($order->status_order === 'Dibatalkan') $statusBadgeClass = 'badge-danger';
                     <span style="font-weight: 700; color: #166534;">Total Dibayar:</span>
                     <strong style="color: #15803d; font-size: 1.15rem;"><?= format_rupiah($order->total_bayar) ?></strong>
                 </div>
+
+                <?php if (!empty($order->bukti_pembayaran)): ?>
+                    <div style="margin-top: 12px; padding: 10px; background: #fff; border: 1px solid #86efac; border-radius: 8px;">
+                        <small style="color: #166534; font-weight: 700; display: block; margin-bottom: 4px;">
+                            <i class="fa-solid fa-file-invoice"></i> Bukti Pembayaran yang Diunggah:
+                        </small>
+                        <a href="<?= base_url('assets/uploads/bukti/' . htmlspecialchars($order->bukti_pembayaran)) ?>" target="_blank" style="color: #2563eb; font-size: 0.85rem; font-weight: 600; text-decoration: underline;">
+                            Lihat Foto Bukti Pembayaran
+                        </a>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <p style="color: #15803d; font-weight: 600; font-size: 0.92rem;">
@@ -297,73 +517,124 @@ if ($order->status_order === 'Dibatalkan') $statusBadgeClass = 'badge-danger';
 
 <script>
 const INVOICE_NO = '<?= addslashes($order->invoice_no) ?>';
-const SNAP_TOKEN = '<?= addslashes($snapToken ?? '') ?>';
+const TOTAL_BAYAR = <?= (int)$order->total_bayar ?>;
+const CUSTOMER_PHONE = '<?= addslashes($customerPhoneDigits) ?>';
 
-// Handle Midtrans Snap Payment
-const payBtn = document.getElementById('pay-button');
-if (payBtn) {
-    payBtn.addEventListener('click', function () {
-        if (!SNAP_TOKEN) {
-            Swal.fire({
-                title: 'Token Pembayaran',
-                text: 'Memproses koneksi gateway...',
-                icon: 'info'
-            });
-            return;
-        }
+// Switch Payment Tabs
+function switchPaymentTab(tabName) {
+    document.querySelectorAll('.payment-tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.payment-tab-pane').forEach(p => p.classList.remove('active'));
 
-        // Check if token is a demo fallback (when custom Midtrans keys are not yet set)
-        const isDemoToken = SNAP_TOKEN.startsWith('DEMO_SNAP_') || SNAP_TOKEN.startsWith('DEMO_');
-        if (isDemoToken) {
-            triggerPaymentSimulator();
-            return;
-        }
+    if (tabName === 'qris') {
+        document.getElementById('tabBtnQris').classList.add('active');
+        document.getElementById('paneQris').classList.add('active');
+    } else if (tabName === 'va') {
+        document.getElementById('tabBtnVa').classList.add('active');
+        document.getElementById('paneVa').classList.add('active');
+    } else if (tabName === 'transfer') {
+        document.getElementById('tabBtnTransfer').classList.add('active');
+        document.getElementById('paneTransfer').classList.add('active');
+    }
+}
 
-        // Check if Snap is loaded
-        if (typeof window.snap !== 'undefined' && typeof window.snap.pay === 'function') {
-            window.snap.pay(SNAP_TOKEN, {
-                onSuccess: function (result) {
-                    const method = (result.payment_type ? 'Midtrans (' + result.payment_type.toUpperCase() + ')' : 'Midtrans QRIS / Virtual Account');
-                    verifyPaymentSuccess(method);
-                },
-                onPending: function (result) {
-                    const method = (result.payment_type ? 'Midtrans (' + result.payment_type.toUpperCase() + ')' : 'Midtrans Virtual Account');
-                    Swal.fire({
-                        title: 'Menunggu Penyelesaian Pembayaran',
-                        text: 'Silakan selesaikan pembayaran sesuai petunjuk yang tertera.',
-                        icon: 'info'
-                    }).then(() => {
-                        window.location.reload();
-                    });
-                },
-                onError: function (result) {
-                    Swal.fire({
-                        title: 'Pembayaran Gagal',
-                        text: 'Terjadi kendala saat memproses pembayaran via gateway.',
-                        icon: 'error'
-                    });
-                },
-                onClose: function () {
-                    Swal.fire({
-                        title: 'Pembayaran Belum Selesai',
-                        text: 'Anda menutup jendela pembayaran. Anda dapat melanjutkannya kapan saja.',
-                        icon: 'warning',
-                        confirmButtonColor: '#2563eb'
-                    });
-                }
-            });
-        } else {
-            // Fallback simulator if external Snap JS is blocked/offline
-            triggerPaymentSimulator();
+// Switch VA Banks
+function switchVaBank(bank) {
+    const btnBca = document.getElementById('btnVaBca');
+    const btnMandiri = document.getElementById('btnVaMandiri');
+    const btnBni = document.getElementById('btnVaBni');
+    const btnBri = document.getElementById('btnVaBri');
+
+    [btnBca, btnMandiri, btnBni, btnBri].forEach(b => {
+        b.className = 'btn btn-sm btn-secondary';
+    });
+
+    const vaName = document.getElementById('vaBankName');
+    const vaText = document.getElementById('vaNumberText');
+
+    if (bank === 'bca') {
+        btnBca.className = 'btn btn-sm btn-primary';
+        vaName.textContent = 'BCA Virtual Account';
+        vaText.textContent = '88000' + CUSTOMER_PHONE;
+    } else if (bank === 'mandiri') {
+        btnMandiri.className = 'btn btn-sm btn-primary';
+        vaName.textContent = 'Mandiri Virtual Account';
+        vaText.textContent = '89508' + CUSTOMER_PHONE;
+    } else if (bank === 'bni') {
+        btnBni.className = 'btn btn-sm btn-primary';
+        vaName.textContent = 'BNI Virtual Account';
+        vaText.textContent = '8810' + CUSTOMER_PHONE;
+    } else if (bank === 'bri') {
+        btnBri.className = 'btn btn-sm btn-primary';
+        vaName.textContent = 'BRI Virtual Account';
+        vaText.textContent = '12800' + CUSTOMER_PHONE;
+    }
+}
+
+// Copy to Clipboard Helper
+function copyToClipboard(elementId, btnId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const text = el.innerText || el.textContent;
+    copyRawValue(text.trim(), btnId);
+}
+
+function copyRawValue(value, btnId) {
+    navigator.clipboard.writeText(value).then(() => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Berhasil Disalin!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('copied');
+            }, 2000);
         }
+    }).catch(err => {
+        console.error('Copy failed', err);
     });
 }
 
-// Function to call verification API and flip order status to Diproses
-function verifyPaymentSuccess(methodName) {
+// Preview Uploaded Proof Image
+function previewBuktiImage(input) {
+    const container = document.getElementById('previewContainer');
+    const previewImg = document.getElementById('previewImg');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            container.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        container.style.display = 'none';
+    }
+}
+
+// Submit Upload Bukti Pembayaran
+function submitUploadBukti() {
+    const input = document.getElementById('buktiInput');
+    if (!input.files || !input.files[0]) {
+        Swal.fire({
+            title: 'File Belum Dipilih',
+            text: 'Silakan pilih foto bukti transfer / struk pembayaran terlebih dahulu.',
+            icon: 'warning',
+            confirmButtonColor: '#2563eb'
+        });
+        return;
+    }
+
+    const activeTab = document.querySelector('.payment-tab-btn.active');
+    let methodText = 'QRIS (E-Wallet)';
+    if (activeTab && activeTab.id === 'tabBtnVa') {
+        methodText = document.getElementById('vaBankName').textContent;
+    } else if (activeTab && activeTab.id === 'tabBtnTransfer') {
+        methodText = 'Transfer Bank Manual';
+    }
+
     Swal.fire({
-        title: 'Verifikasi Pembayaran...',
-        text: 'Memperbarui status pesanan Anda ke sistem toko.',
+        title: 'Mengunggah Bukti Pembayaran...',
+        text: 'Mohon tunggu sebentar, sistem sedang memverifikasi file Anda.',
         allowOutsideClick: false,
         didOpen: () => {
             Swal.showLoading();
@@ -372,7 +643,8 @@ function verifyPaymentSuccess(methodName) {
 
     const formData = new FormData();
     formData.append('invoice', INVOICE_NO);
-    formData.append('method', methodName);
+    formData.append('method', methodText);
+    formData.append('bukti_pembayaran', input.files[0]);
 
     fetch('<?= base_url("api/verify_payment.php") ?>', {
         method: 'POST',
@@ -382,92 +654,87 @@ function verifyPaymentSuccess(methodName) {
     .then(data => {
         if (data.success) {
             Swal.fire({
-                title: 'Pembayaran Diterima!',
-                text: 'Status pesanan otomatis diubah menjadi DIPROSES.',
+                title: 'Bukti Pembayaran Terkirim!',
+                text: 'Terima kasih, bukti pembayaran Anda telah berhasil kami terima. Pesanan Anda kini DIPROSES toko.',
                 icon: 'success',
                 confirmButtonColor: '#16a34a',
-                confirmButtonText: 'Bagus, Lihat Detail'
+                confirmButtonText: 'Lihat Rincian Pesanan'
             }).then(() => {
                 window.location.reload();
             });
         } else {
-            Swal.fire('Error', data.message || 'Gagal memverifikasi', 'error');
+            Swal.fire('Gagal Mengunggah', data.message || 'Terjadi kesalahan saat upload.', 'error');
         }
     })
     .catch(err => {
         console.error(err);
-        Swal.fire('Info', 'Pembayaran sedang diproses sistem toko.', 'info').then(() => {
-            window.location.reload();
-        });
+        Swal.fire('Error', 'Terjadi kesalahan koneksi.', 'error');
     });
 }
 
-// Trigger Sandbox Testing Payment Simulator
-function triggerPaymentSimulator() {
-    Swal.fire({
-        title: 'Midtrans Payment Gateway',
-        html: `
-            <div style="text-align: center; margin-bottom: 16px;">
-                <span class="badge badge-info" style="font-size: 0.75rem; padding: 4px 10px;">Sandbox Testing Mode</span>
-                <p style="color: #64748b; font-size: 0.88rem; margin-top: 8px;">
-                    Pilih metode pembayaran instan untuk menyelesaikan pesanan <strong>#${INVOICE_NO}</strong>:
-                </p>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
-                <button type="button" id="payQris" class="btn btn-secondary" style="justify-content: flex-start; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; width: 100%; transition: all 0.2s;" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='#e2e8f0'">
-                    <i class="fa-solid fa-qrcode" style="color: #ea580c; font-size: 1.3rem; width: 30px; text-align: center;"></i>
-                    <div>
-                        <strong style="color: #0f172a; font-size: 0.92rem; display: block;">QRIS (GoPay / ShopeePay / DANA)</strong>
-                        <small style="color: #64748b; font-size: 0.78rem;">Scan & verifikasi instan otomatis</small>
-                    </div>
-                </button>
-                <button type="button" id="payBca" class="btn btn-secondary" style="justify-content: flex-start; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; width: 100%; transition: all 0.2s;" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='#e2e8f0'">
-                    <i class="fa-solid fa-building-columns" style="color: #2563eb; font-size: 1.3rem; width: 30px; text-align: center;"></i>
-                    <div>
-                        <strong style="color: #0f172a; font-size: 0.92rem; display: block;">BCA Virtual Account</strong>
-                        <small style="color: #64748b; font-size: 0.78rem;">Konfirmasi otomatis tanpa upload struk</small>
-                    </div>
-                </button>
-                <button type="button" id="payMandiri" class="btn btn-secondary" style="justify-content: flex-start; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; width: 100%; transition: all 0.2s;" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='#e2e8f0'">
-                    <i class="fa-solid fa-credit-card" style="color: #16a34a; font-size: 1.3rem; width: 30px; text-align: center;"></i>
-                    <div>
-                        <strong style="color: #0f172a; font-size: 0.92rem; display: block;">Mandiri / BNI / BRI Virtual Account</strong>
-                        <small style="color: #64748b; font-size: 0.78rem;">Transfer bank & verifikasi otomatis</small>
-                    </div>
-                </button>
-            </div>
-        `,
-        showConfirmButton: false,
-        showCancelButton: true,
-        cancelButtonText: 'Tutup',
-        cancelButtonColor: '#64748b',
-        didOpen: () => {
-            const btnQris = document.getElementById('payQris');
-            const btnBca = document.getElementById('payBca');
-            const btnMandiri = document.getElementById('payMandiri');
+// Instant Direct Payment Confirmation
+function confirmInstantPayment() {
+    const activeTab = document.querySelector('.payment-tab-btn.active');
+    let methodText = 'QRIS (E-Wallet)';
+    if (activeTab && activeTab.id === 'tabBtnVa') {
+        methodText = document.getElementById('vaBankName').textContent;
+    } else if (activeTab && activeTab.id === 'tabBtnTransfer') {
+        methodText = 'Transfer Bank Manual';
+    }
 
-            if (btnQris) {
-                btnQris.onclick = () => {
-                    Swal.close();
-                    verifyPaymentSuccess('Midtrans QRIS (GoPay/ShopeePay)');
-                };
-            }
-            if (btnBca) {
-                btnBca.onclick = () => {
-                    Swal.close();
-                    verifyPaymentSuccess('Midtrans Virtual Account (BCA)');
-                };
-            }
-            if (btnMandiri) {
-                btnMandiri.onclick = () => {
-                    Swal.close();
-                    verifyPaymentSuccess('Midtrans Virtual Account (Mandiri/BNI)');
-                };
-            }
+    Swal.fire({
+        title: 'Konfirmasi Telah Bayar?',
+        text: `Apakah Anda sudah menyelesaikan pembayaran pesanan #${INVOICE_NO} via ${methodText}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: '<i class="fa-solid fa-check"></i> Ya, Sudah Bayar',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Memverifikasi...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const formData = new FormData();
+            formData.append('invoice', INVOICE_NO);
+            formData.append('method', methodText);
+
+            fetch('<?= base_url("api/verify_payment.php") ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Pembayaran Diterima!',
+                        text: 'Status pesanan Anda kini berhasil diubah menjadi DIPROSES.',
+                        icon: 'success',
+                        confirmButtonColor: '#16a34a'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Perhatian', data.message || 'Gagal memproses', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Info', 'Pembayaran sedang diproses sistem.', 'info').then(() => {
+                    window.location.reload();
+                });
+            });
         }
     });
 }
-// Function for Customer to confirm order receipt
+
+// Customer Confirm Order Receipt
 function confirmOrderReceived(invoiceNo) {
     Swal.fire({
         title: 'Konfirmasi Pesanan Diterima',

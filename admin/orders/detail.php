@@ -201,7 +201,7 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
             </div>
         </div>
 
-        <!-- Step 2: Pembayaran Midtrans -->
+        <!-- Step 2: Pembayaran (QRIS / Transfer) -->
         <div class="stepper-node <?= $step2Done ? 'completed' : ($s === 'Menunggu Pembayaran' ? 'active' : '') ?>">
             <div class="stepper-title">
                 <i class="fa-solid <?= $step2Done ? 'fa-circle-check' : ($s === 'Menunggu Pembayaran' ? 'fa-clock' : 'fa-circle') ?>"></i>
@@ -210,7 +210,7 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
             <div class="stepper-desc">
                 <?php if ($step2Done): ?>
                     <span style="color: #166534; font-weight: 600;">Lunas Diterima</span><br>
-                    <?= !empty($order->waktu_bayar) ? date('d M Y, H:i', strtotime($order->waktu_bayar)) . ' WIB' : 'Otomatis Gateway' ?>
+                    <?= !empty($order->waktu_bayar) ? date('d M Y, H:i', strtotime($order->waktu_bayar)) . ' WIB' : 'Lunas Dikonfirmasi' ?>
                 <?php else: ?>
                     <span style="color: #d97706; font-weight: 600;">Menunggu Pembayaran</span><br>
                     Customer belum menyelesaikan transaksi
@@ -290,46 +290,48 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
 
             <!-- Products List -->
             <h3 style="font-size: 1rem; margin-bottom: 12px; font-weight: 700;">Daftar Sepatu yang Dipesan:</h3>
-            <table class="modern-table">
-                <thead>
-                    <tr>
-                        <th width="60">Foto</th>
-                        <th>Nama Sepatu</th>
-                        <th>Ukuran</th>
-                        <th>Harga</th>
-                        <th>Qty</th>
-                        <th style="text-align: right;">Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($items as $it): ?>
+            <div class="table-responsive">
+                <table class="modern-table">
+                    <thead>
                         <tr>
-                            <td>
-                                <img src="<?= product_image_url($it->image_produk) ?>" alt="<?= htmlspecialchars($it->nama_produk) ?>" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;">
-                            </td>
-                            <td>
-                                <strong><?= htmlspecialchars($it->nama_produk) ?></strong>
-                            </td>
-                            <td>
-                                <span class="badge badge-info">Size <?= htmlspecialchars($it->ukuran) ?></span>
-                            </td>
-                            <td><?= format_rupiah($it->harga) ?></td>
-                            <td><?= $it->qty ?>x</td>
-                            <td style="text-align: right; font-weight: 700; color: #2563eb;">
-                                <?= format_rupiah($it->subtotal) ?>
+                            <th width="60">Foto</th>
+                            <th>Nama Sepatu</th>
+                            <th>Ukuran</th>
+                            <th>Harga</th>
+                            <th>Qty</th>
+                            <th style="text-align: right;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($items as $it): ?>
+                            <tr>
+                                <td>
+                                    <img src="<?= product_image_url($it->image_produk) ?>" alt="<?= htmlspecialchars($it->nama_produk) ?>" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                </td>
+                                <td>
+                                    <strong><?= htmlspecialchars($it->nama_produk) ?></strong>
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">Size <?= htmlspecialchars($it->ukuran) ?></span>
+                                </td>
+                                <td><?= format_rupiah($it->harga) ?></td>
+                                <td><?= $it->qty ?>x</td>
+                                <td style="text-align: right; font-weight: 700; color: #2563eb;">
+                                    <?= format_rupiah($it->subtotal) ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" style="text-align: right; font-weight: 700; font-size: 1.05rem;">Total Tagihan:</td>
+                            <td style="text-align: right; font-weight: 800; font-size: 1.15rem; color: #2563eb;">
+                                <?= format_rupiah($order->total_bayar) ?>
                             </td>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="5" style="text-align: right; font-weight: 700; font-size: 1.05rem;">Total Tagihan:</td>
-                        <td style="text-align: right; font-weight: 800; font-size: 1.15rem; color: #2563eb;">
-                            <?= format_rupiah($order->total_bayar) ?>
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
+                    </tfoot>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -340,21 +342,35 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
                 <h2><i class="fa-solid fa-truck-fast" style="color: #2563eb; margin-right: 8px;"></i> Status & Pengiriman</h2>
             </div>
 
-            <!-- Payment Gateway Summary Badge -->
+            <!-- Payment Summary Badge -->
             <?php if ($order->status_order !== 'Menunggu Pembayaran'): ?>
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px 14px; border-radius: 8px; margin-bottom: 18px; font-size: 0.88rem; line-height: 1.5;">
-                    <div style="font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                        <i class="fa-solid fa-circle-check" style="color: #16a34a;"></i> Pembayaran Lunas Diterima
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 14px; border-radius: 10px; margin-bottom: 18px; font-size: 0.88rem; line-height: 1.5;">
+                    <div style="font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                        <i class="fa-solid fa-circle-check" style="color: #16a34a; font-size: 1.1rem;"></i> Pembayaran Lunas Diterima
                     </div>
-                    <div><strong>Metode:</strong> <?= htmlspecialchars($order->metode_pembayaran ?? 'Midtrans Payment Gateway') ?></div>
+                    <div><strong>Metode:</strong> <?= htmlspecialchars($order->metode_pembayaran ?? 'QRIS / Transfer Bank') ?></div>
                     <div><strong>Waktu Bayar:</strong> <?= !empty($order->waktu_bayar) ? date('d M Y, H:i', strtotime($order->waktu_bayar)) : date('d M Y, H:i', strtotime($order->created_at)) ?> WIB</div>
+                    
+                    <?php if (!empty($order->bukti_pembayaran)): ?>
+                        <div style="margin-top: 12px; padding: 10px; background: #fff; border: 1px solid #86efac; border-radius: 8px;">
+                            <div style="font-weight: 700; color: #166534; font-size: 0.82rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-file-invoice-dollar"></i> Lampiran Bukti Pembayaran Customer:
+                            </div>
+                            <a href="<?= base_url('assets/uploads/bukti/' . htmlspecialchars($order->bukti_pembayaran)) ?>" target="_blank" title="Klik untuk memperbesar foto bukti">
+                                <img src="<?= base_url('assets/uploads/bukti/' . htmlspecialchars($order->bukti_pembayaran)) ?>" alt="Bukti Transfer" style="max-width: 100%; max-height: 180px; object-fit: contain; border-radius: 6px; border: 1px solid #cbd5e1; display: block; background: #f8fafc; padding: 4px;">
+                            </a>
+                            <small style="color: #64748b; font-size: 0.78rem; display: block; margin-top: 6px;">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Klik foto untuk melihat ukuran penuh
+                            </small>
+                        </div>
+                    <?php endif; ?>
                 </div>
             <?php else: ?>
-                <div style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 12px 14px; border-radius: 8px; margin-bottom: 18px; font-size: 0.88rem; line-height: 1.5;">
+                <div style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 14px; border-radius: 10px; margin-bottom: 18px; font-size: 0.88rem; line-height: 1.5;">
                     <div style="font-weight: 700; display: flex; align-items: center; gap: 6px;">
                         <i class="fa-solid fa-clock" style="color: #d97706;"></i> Menunggu Pembayaran
                     </div>
-                    <div style="margin-top: 4px; font-size: 0.82rem; color: #b45309;">Menunggu customer menyelesaikan transaksi via Midtrans Gateway.</div>
+                    <div style="margin-top: 4px; font-size: 0.82rem; color: #b45309;">Menunggu customer menyelesaikan pembayaran via QRIS, Virtual Account, atau Transfer Bank.</div>
                 </div>
             <?php endif; ?>
 
