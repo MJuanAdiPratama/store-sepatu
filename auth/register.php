@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="login-header">
                 <i class="fa-solid fa-shoe-prints" style="color: #2563eb; font-size: 2.2rem; margin-bottom: 8px;"></i>
                 <h1>Buat Akun Customer</h1>
-                <p>Daftar untuk kemudahan belanja & lacak pesanan sepatu</p>
+                <p>Daftar untuk kemudahan belanja sepatu impianmu</p>
             </div>
 
             <?php if (!empty($error)): ?>
@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="form-group">
-                    <label for="alamat">Alamat Pengiriman Default</label>
+                    <label for="alamat">Alamat</label>
                     <textarea id="alamat" name="alamat" class="form-control" rows="2" placeholder="Nama jalan, kota, kode pos..."><?= htmlspecialchars($_POST['alamat'] ?? '') ?></textarea>
                 </div>
 

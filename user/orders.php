@@ -61,7 +61,7 @@ require_once $rootPath . '/includes/header.php';
         <div style="background: #fff; padding: 32px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: var(--shadow-sm);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid #f1f5f9; padding-bottom: 16px;">
                 <h1 style="font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
-                    <i class="fa-solid fa-clock-rotate-left" style="color: #2563eb;"></i> Riwayat Pesanan Sepatu
+                    <i class="fa-solid fa-clock-rotate-left" style="color: #2563eb;"></i> Riwayat Pesanan
                 </h1>
                 <span class="badge badge-info"><?= count($orders) ?> Total Pesanan</span>
             </div>
