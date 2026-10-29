@@ -163,3 +163,12 @@ Pada transaksi e-commerce, setelah paket dikirim oleh kurir, Admin membutuhkan k
 ### Akun Pelanggan (Customer):
 * **URL Login:** `http://localhost/store-sepatu/auth/login.php`
 * Pelanggan dapat mendaftar akun baru melalui tombol **"Daftar Akun Baru"** atau menggunakan akun customer terdaftar.
+
+---
+
+## 📊 7. Fitur Laporan Penjualan & Pengambilan Toko
+
+* **Filter & Laporan Penjualan Bulanan:** Admin dapat memfilter transaksi berdasarkan Bulan dan Tahun secara spesifik dengan ringkasan metrik eksekutif (Total Transaksi, Pesanan Selesai, Total Pasang Sepatu Terjual, dan Total Omzet Bersih).
+* **Cetak & Ekspor Laporan:** Tersedia tombol **Cetak / PDF Laporan** berstandar dokumen resmi perusahaan dan tombol **Ekspor Excel (.CSV)** dengan format rapi dan encoding UTF-8 BOM.
+* **Metode Ambil di Toko Fisik:** Pesanan dengan opsi ambil di toko otomatis disesuaikan (gratis ongkir, menampilkan jam operasional 09.00 - 21.00 WIB, alamat toko, serta meniadakan opsi kurir/resi ekspedisi yang tidak relevan).
+* **Modal Lightbox Bukti Transfer:** Pembeli dan Admin dapat melihat foto struk pembayaran langsung melalui pop-up modal di halaman yang sama tanpa berpindah tab.
