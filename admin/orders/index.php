@@ -7,16 +7,16 @@
 $pageTitle = 'Manajemen Pesanan';
 require_once dirname(__DIR__) . '/includes/header.php';
 
-$selectedMonth = trim($_GET['month'] ?? '');
+$selectedMonth = !empty($_GET['month']) ? (int)$_GET['month'] : 0;
 $selectedYear  = trim($_GET['year'] ?? '');
 $statusFilter  = trim($_GET['status'] ?? '');
 $search        = trim($_GET['search'] ?? '');
 
 $months = [
-    '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
-    '04' => 'April',   '05' => 'Mei',      '06' => 'Juni',
-    '07' => 'Juli',    '08' => 'Agustus',  '09' => 'September',
-    '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+    1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
+    4 => 'April',   5 => 'Mei',      6 => 'Juni',
+    7 => 'Juli',    8 => 'Agustus',  9 => 'September',
+    10 => 'Oktober', 11 => 'November', 12 => 'Desember'
 ];
 
 // Get distinct years in database
@@ -34,9 +34,9 @@ if (!in_array($currentYear, $availableYears)) {
 $where = "WHERE 1=1";
 $params = [];
 
-if (!empty($selectedMonth)) {
+if ($selectedMonth > 0) {
     $where .= " AND MONTH(created_at) = ?";
-    $params[] = (int)$selectedMonth;
+    $params[] = $selectedMonth;
 }
 
 if (!empty($selectedYear)) {
@@ -77,9 +77,9 @@ $exportQuery = http_build_query($exportParams);
 
 // Period description string
 $periodLabel = 'Semua Periode';
-if (!empty($selectedMonth) && !empty($selectedYear)) {
+if ($selectedMonth > 0 && !empty($selectedYear)) {
     $periodLabel = ($months[$selectedMonth] ?? 'Bulan ' . $selectedMonth) . ' ' . $selectedYear;
-} elseif (!empty($selectedMonth)) {
+} elseif ($selectedMonth > 0) {
     $periodLabel = 'Bulan ' . ($months[$selectedMonth] ?? $selectedMonth);
 } elseif (!empty($selectedYear)) {
     $periodLabel = 'Tahun ' . $selectedYear;
@@ -151,7 +151,7 @@ if (!empty($selectedMonth) && !empty($selectedYear)) {
                 <select name="month" class="form-control" style="font-size: 0.85rem;" onchange="this.form.submit()">
                     <option value="">Semua Bulan</option>
                     <?php foreach ($months as $num => $name): ?>
-                        <option value="<?= $num ?>" <?= $selectedMonth === $num ? 'selected' : '' ?>><?= $name ?></option>
+                        <option value="<?= $num ?>" <?= ($selectedMonth === $num) ? 'selected' : '' ?>><?= $name ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -191,7 +191,7 @@ if (!empty($selectedMonth) && !empty($selectedYear)) {
             <button type="submit" class="btn btn-secondary btn-sm" style="padding: 9px 14px; white-space: nowrap;">
                 <i class="fa-solid fa-filter"></i> Terapkan
             </button>
-            <?php if (!empty($search) || !empty($statusFilter) || !empty($selectedMonth) || !empty($selectedYear)): ?>
+            <?php if (!empty($search) || !empty($statusFilter) || $selectedMonth > 0 || !empty($selectedYear)): ?>
                 <a href="<?= admin_url('orders/index.php') ?>" class="btn btn-sm" style="color: #ef4444; padding: 9px 12px; white-space: nowrap;" title="Reset Semua Filter">
                     <i class="fa-solid fa-rotate-left"></i> Reset
                 </a>

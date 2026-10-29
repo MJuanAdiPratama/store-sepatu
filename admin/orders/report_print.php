@@ -12,25 +12,25 @@ require_once $rootPath . '/config/session.php';
 // Enforce admin access
 require_admin();
 
-$selectedMonth = trim($_GET['month'] ?? '');
+$selectedMonth = !empty($_GET['month']) ? (int)$_GET['month'] : 0;
 $selectedYear  = trim($_GET['year'] ?? '');
 $statusFilter  = trim($_GET['status'] ?? '');
 $search        = trim($_GET['search'] ?? '');
 
 $months = [
-    '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
-    '04' => 'April',   '05' => 'Mei',      '06' => 'Juni',
-    '07' => 'Juli',    '08' => 'Agustus',  '09' => 'September',
-    '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+    1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
+    4 => 'April',   5 => 'Mei',      6 => 'Juni',
+    7 => 'Juli',    8 => 'Agustus',  9 => 'September',
+    10 => 'Oktober', 11 => 'November', 12 => 'Desember'
 ];
 
 // Query
 $where = "WHERE 1=1";
 $params = [];
 
-if (!empty($selectedMonth)) {
+if ($selectedMonth > 0) {
     $where .= " AND MONTH(created_at) = ?";
-    $params[] = (int)$selectedMonth;
+    $params[] = $selectedMonth;
 }
 
 if (!empty($selectedYear)) {
@@ -86,16 +86,16 @@ foreach ($orders as $ord) {
 
 // Period Label
 $periodLabel = '';
-if (!empty($selectedMonth) && !empty($selectedYear)) {
-    $periodLabel = ($months[$selectedMonth] ?? $selectedMonth) . ' ' . $selectedYear;
-} elseif (!empty($selectedMonth)) {
+if ($selectedMonth > 0 && !empty($selectedYear)) {
+    $periodLabel = ($months[$selectedMonth] ?? 'Bulan ' . $selectedMonth) . ' ' . $selectedYear;
+} elseif ($selectedMonth > 0) {
     $periodLabel = 'Bulan ' . ($months[$selectedMonth] ?? $selectedMonth);
 } elseif (!empty($selectedYear)) {
     $periodLabel = 'Tahun ' . $selectedYear;
 }
 
 $contact = get_admin_contact();
-$tglCetak = date('d') . ' ' . ($months[date('m')] ?? date('F')) . ' ' . date('Y');
+$tglCetak = date('d') . ' ' . ($months[(int)date('m')] ?? date('F')) . ' ' . date('Y');
 ?>
 <!DOCTYPE html>
 <html lang="id">
