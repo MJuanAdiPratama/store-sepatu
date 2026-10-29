@@ -125,30 +125,30 @@ if ($selectedMonth > 0 && !empty($selectedYear)) {
     </div>
 </div>
 
-<div class="card-panel">
+<div class="card-panel" id="daftarPesananPanel">
     <div class="panel-header" style="flex-wrap: wrap; gap: 12px;">
         <div>
             <h2><i class="fa-solid fa-cart-shopping" style="color: #2563eb; margin-right: 8px;"></i> Daftar Pesanan Pelanggan</h2>
             <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Kelola pesanan pelanggan dan cetak laporan penjualan toko QxuanStore.</p>
         </div>
         
-        <!-- Print Action Button (Warna Merah untuk PDF) -->
+        <!-- Print Action Button (Warna Merah untuk PDF - Wajib Pilih Bulan & Tahun) -->
         <div>
-            <a href="<?= admin_url('orders/report_print.php?' . $exportQuery) ?>" target="_blank" class="btn btn-sm" style="background: #ef4444; color: #fff; border: 1px solid #dc2626; border-radius: 8px; font-weight: 700; box-shadow: 0 2px 5px rgba(239, 68, 68, 0.25);" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'" title="Cetak atau Simpan PDF Laporan Penjualan">
+            <button type="button" onclick="handlePrintReport(event)" class="btn btn-sm" style="background: #ef4444; color: #fff; border: 1px solid #dc2626; border-radius: 8px; font-weight: 700; box-shadow: 0 2px 5px rgba(239, 68, 68, 0.25); cursor: pointer;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'" title="Cetak atau Simpan PDF Laporan Penjualan">
                 <i class="fa-solid fa-file-pdf"></i> Cetak Laporan Penjualan (PDF)
-            </a>
+            </button>
         </div>
     </div>
 
-    <!-- Monthly & Yearly Filter Form -->
-    <form action="" method="GET" class="admin-filter-bar">
+    <!-- Monthly & Yearly Filter Form (Scroll position preserved on change) -->
+    <form id="orderFilterForm" action="" method="GET" class="admin-filter-bar" onsubmit="sessionStorage.setItem('admin_order_scroll_pos', window.scrollY.toString())">
         
         <!-- Filter Bulan & Tahun Berdampingan (Mobile & Desktop) -->
         <div class="filter-group-pair">
             <!-- Filter Bulan -->
             <div class="filter-group" style="flex: 1.3;">
-                <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Bulan</label>
-                <select name="month" class="form-control" style="font-size: 0.85rem;" onchange="this.form.submit()">
+                <label for="filterMonth" style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Bulan</label>
+                <select id="filterMonth" name="month" class="form-control" style="font-size: 0.85rem;" onchange="submitFilterWithScroll(this.form)">
                     <option value="">Semua Bulan</option>
                     <?php foreach ($months as $num => $name): ?>
                         <option value="<?= $num ?>" <?= ($selectedMonth === $num) ? 'selected' : '' ?>><?= $name ?></option>
@@ -158,8 +158,8 @@ if ($selectedMonth > 0 && !empty($selectedYear)) {
 
             <!-- Filter Tahun -->
             <div class="filter-group" style="flex: 1;">
-                <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Tahun</label>
-                <select name="year" class="form-control" style="font-size: 0.85rem;" onchange="this.form.submit()">
+                <label for="filterYear" style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Tahun</label>
+                <select id="filterYear" name="year" class="form-control" style="font-size: 0.85rem;" onchange="submitFilterWithScroll(this.form)">
                     <option value="">Semua Tahun</option>
                     <?php foreach ($availableYears as $yr): ?>
                         <option value="<?= $yr ?>" <?= $selectedYear === (string)$yr ? 'selected' : '' ?>><?= $yr ?></option>
@@ -170,8 +170,8 @@ if ($selectedMonth > 0 && !empty($selectedYear)) {
 
         <!-- Filter Status -->
         <div class="filter-group">
-            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Status</label>
-            <select name="status" class="form-control" style="font-size: 0.85rem;" onchange="this.form.submit()">
+            <label for="filterStatus" style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Status</label>
+            <select id="filterStatus" name="status" class="form-control" style="font-size: 0.85rem;" onchange="submitFilterWithScroll(this.form)">
                 <option value="">Semua Status</option>
                 <option value="Menunggu Pembayaran" <?= $statusFilter === 'Menunggu Pembayaran' ? 'selected' : '' ?>>Menunggu Pembayaran</option>
                 <option value="Diproses" <?= $statusFilter === 'Diproses' ? 'selected' : '' ?>>Diproses</option>
@@ -183,8 +183,8 @@ if ($selectedMonth > 0 && !empty($selectedYear)) {
 
         <!-- Search Bar -->
         <div class="filter-group filter-search">
-            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Pencarian</label>
-            <input type="text" name="search" class="form-control" placeholder="Cari No. Invoice / Nama / WhatsApp..." value="<?= htmlspecialchars($search) ?>" style="font-size: 0.85rem; width: 100%;">
+            <label for="filterSearch" style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Pencarian</label>
+            <input type="text" id="filterSearch" name="search" class="form-control" placeholder="Cari No. Invoice / Nama / WhatsApp..." value="<?= htmlspecialchars($search) ?>" style="font-size: 0.85rem; width: 100%;">
         </div>
 
         <div class="filter-actions">
@@ -192,7 +192,7 @@ if ($selectedMonth > 0 && !empty($selectedYear)) {
                 <i class="fa-solid fa-filter"></i> Terapkan
             </button>
             <?php if (!empty($search) || !empty($statusFilter) || $selectedMonth > 0 || !empty($selectedYear)): ?>
-                <a href="<?= admin_url('orders/index.php') ?>" class="btn btn-sm" style="color: #ef4444; padding: 9px 12px; white-space: nowrap;" title="Reset Semua Filter">
+                <a href="<?= admin_url('orders/index.php') ?>" onclick="sessionStorage.setItem('admin_order_scroll_pos', window.scrollY.toString())" class="btn btn-sm" style="color: #ef4444; padding: 9px 12px; white-space: nowrap;" title="Reset Semua Filter">
                     <i class="fa-solid fa-rotate-left"></i> Reset
                 </a>
             <?php endif; ?>
@@ -294,5 +294,93 @@ if ($selectedMonth > 0 && !empty($selectedYear)) {
         </table>
     </div>
 </div>
+
+<script>
+// Fungsi validasi wajib pilih Bulan & Tahun sebelum cetak laporan PDF
+function handlePrintReport(e) {
+    if (e) e.preventDefault();
+    
+    const monthSelect = document.getElementById('filterMonth');
+    const yearSelect = document.getElementById('filterYear');
+    const monthVal = monthSelect ? monthSelect.value : '';
+    const yearVal = yearSelect ? yearSelect.value : '';
+
+    if (!monthVal) {
+        Swal.fire({
+            title: 'Pilih Bulan Terlebih Dahulu',
+            text: 'Untuk mencetak laporan penjualan, Anda wajib memilih periode Bulan terlebih dahulu.',
+            icon: 'warning',
+            confirmButtonColor: '#2563eb',
+            confirmButtonText: 'Pilih Bulan Sekarang'
+        }).then(() => {
+            if (monthSelect) {
+                monthSelect.focus();
+                monthSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                monthSelect.style.borderColor = '#ef4444';
+                monthSelect.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.25)';
+                setTimeout(() => {
+                    monthSelect.style.borderColor = '';
+                    monthSelect.style.boxShadow = '';
+                }, 3000);
+            }
+        });
+        return false;
+    }
+
+    if (!yearVal) {
+        Swal.fire({
+            title: 'Pilih Tahun Terlebih Dahulu',
+            text: 'Untuk mencetak laporan penjualan, Anda wajib memilih periode Tahun terlebih dahulu.',
+            icon: 'warning',
+            confirmButtonColor: '#2563eb',
+            confirmButtonText: 'Pilih Tahun Sekarang'
+        }).then(() => {
+            if (yearSelect) {
+                yearSelect.focus();
+                yearSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                yearSelect.style.borderColor = '#ef4444';
+                yearSelect.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.25)';
+                setTimeout(() => {
+                    yearSelect.style.borderColor = '';
+                    yearSelect.style.boxShadow = '';
+                }, 3000);
+            }
+        });
+        return false;
+    }
+
+    // Jika bulan dan tahun sudah terisi, buat URL dan buka tab baru cetak PDF
+    const statusVal = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : '';
+    const searchVal = document.getElementById('filterSearch') ? document.getElementById('filterSearch').value : '';
+    
+    const params = new URLSearchParams();
+    params.set('month', monthVal);
+    params.set('year', yearVal);
+    if (statusVal) params.set('status', statusVal);
+    if (searchVal) params.set('search', searchVal);
+
+    const printUrl = `<?= admin_url('orders/report_print.php') ?>?${params.toString()}`;
+    window.open(printUrl, '_blank');
+}
+
+// Fungsi submit filter dengan mempertahankan posisi scroll agar tidak melompat ke atas
+function submitFilterWithScroll(form) {
+    if (!form) return;
+    sessionStorage.setItem('admin_order_scroll_pos', window.scrollY.toString());
+    form.submit();
+}
+
+// Kembalikan posisi scroll setelah halaman selesai dimuat
+document.addEventListener('DOMContentLoaded', function() {
+    const savedPos = sessionStorage.getItem('admin_order_scroll_pos');
+    if (savedPos !== null) {
+        window.scrollTo({
+            top: parseInt(savedPos, 10),
+            behavior: 'instant'
+        });
+        sessionStorage.removeItem('admin_order_scroll_pos');
+    }
+});
+</script>
 
 <?php require_once dirname(__DIR__) . '/includes/footer.php'; ?>

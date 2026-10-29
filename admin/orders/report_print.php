@@ -17,6 +17,13 @@ $selectedYear  = trim($_GET['year'] ?? '');
 $statusFilter  = trim($_GET['status'] ?? '');
 $search        = trim($_GET['search'] ?? '');
 
+// Validasi wajib memilih Bulan & Tahun sebelum membuka halaman laporan
+if ($selectedMonth <= 0 || empty($selectedYear)) {
+    set_flash('error', 'Silakan pilih periode Bulan dan Tahun terlebih dahulu sebelum mencetak laporan!');
+    redirect(admin_url('orders/index.php'));
+    exit;
+}
+
 $months = [
     1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
     4 => 'April',   5 => 'Mei',      6 => 'Juni',
