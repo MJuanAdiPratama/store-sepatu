@@ -92,7 +92,7 @@ if ($order->status_order === 'Dibatalkan') $statusBadgeClass = 'badge-danger';
             <!-- Primary Payment Gateway Action -->
             <div style="max-width: 480px; margin: 0 auto;">
                 <button type="button" id="pay-button" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px 24px; font-size: 1.05rem; border-radius: 12px; box-shadow: 0 8px 20px rgba(37,99,235,0.35);">
-                    <i class="fa-solid fa-lock"></i> Bayar Sekarang via Midtrans Gateway
+                    <i class="fa-solid"></i> Bayar Sekarang
                 </button>
 
                 <!-- Sandbox Testing Simulation Button -->
@@ -101,7 +101,7 @@ if ($order->status_order === 'Dibatalkan') $statusBadgeClass = 'badge-danger';
                         <i class="fa-solid fa-bolt-lightning" style="color: #f59e0b;"></i> Simulasi Bayar Langsung (Testing Sandbox)
                     </button>
                     <small style="display: block; color: #64748b; font-size: 0.78rem; margin-top: 6px;">
-                        Gunakan tombol simulasi di atas untuk langsung menguji perubahan status otomatis menjadi <strong>Diproses</strong> tanpa harus membuka gateway.
+                        lakukan pembayaran untuk perubahan status otomatis menjadi <strong>Diproses</strong> dan pesanan akan disiapkan, terimakasih.
                     </small>
                 </div>
             </div>
