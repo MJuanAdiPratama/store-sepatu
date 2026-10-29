@@ -101,7 +101,7 @@ $totalBayar = 0;
 
     <div style="margin-bottom: 28px;">
         <h1 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.5px;">Keranjang Belanja Sepatu</h1>
-        <p style="color: #64748b; font-size: 0.95rem;">Periksa kembali ukuran dan jumlah pasang sepatu sebelum melanjutkan ke pembayaran.</p>
+        <p style="color: #64748b; font-size: 0.95rem;">Periksa kembali ukuran dan jumlah sepatu sebelum melanjutkan ke pembayaran.</p>
     </div>
 
     <?php if (!empty($cart)): ?>
@@ -115,7 +115,7 @@ $totalBayar = 0;
                                 <th width="70">Foto</th>
                                 <th>Nama Sepatu & Ukuran</th>
                                 <th>Harga</th>
-                                <th width="140" style="text-align: center;">Jumlah (Pasang)</th>
+                                <th width="140" style="text-align: center;">Jumlah</th>
                                 <th>Subtotal</th>
                                 <th width="50" style="text-align: right;">Aksi</th>
                             </tr>

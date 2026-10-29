@@ -163,7 +163,7 @@ require_once __DIR__ . '/includes/header.php';
 
                 <!-- Quantity -->
                 <div style="margin-bottom: 24px;">
-                    <label for="qty" style="display: block; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">Jumlah Pasang:</label>
+                    <label for="qty" style="display: block; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">Jumlah:</label>
                     <input type="number" id="qty" name="qty" value="1" min="1" max="10" class="form-control" style="width: 100px; padding: 8px 12px;">
                 </div>
 
