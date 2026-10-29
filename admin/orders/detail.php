@@ -400,7 +400,7 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
                                 <img src="<?= base_url('assets/uploads/bukti/' . htmlspecialchars($order->bukti_pembayaran)) ?>" alt="Bukti Transfer" style="max-width: 100%; max-height: 180px; object-fit: contain; border-radius: 6px; border: 1px solid #cbd5e1; display: block; background: #f8fafc; padding: 4px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
                             </div>
                             <button type="button" onclick="showBuktiPopUp('<?= base_url('assets/uploads/bukti/' . htmlspecialchars($order->bukti_pembayaran)) ?>')" class="btn btn-secondary btn-sm" style="margin-top: 8px; width: 100%; justify-content: center; font-size: 0.8rem;">
-                                <i class="fa-solid fa-eye"></i> Perbesar Foto Bukti (Pop-up)
+                                <i class="fa-solid fa-eye"></i> Lihat Foto Bukti
                             </button>
                         </div>
                     <?php endif; ?>

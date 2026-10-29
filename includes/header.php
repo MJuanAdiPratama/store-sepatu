@@ -138,6 +138,26 @@ if (is_user() && isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
     }
 
     function handleSearchSubmit(e, form) {
+        const input = form.querySelector('input[name="search"]');
+        const val = input ? input.value.trim() : '';
+
+        // Jika belum memasukkan kata/huruf kunci, arahkan fokus ke field search bar
+        if (!val) {
+            e.preventDefault();
+            if (input) {
+                input.focus();
+                input.style.transition = 'all 0.3s ease';
+                input.style.borderColor = '#2563eb';
+                input.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.25)';
+                input.placeholder = 'Ketik nama sepatu yang Anda cari di sini...';
+                setTimeout(() => {
+                    input.style.borderColor = '';
+                    input.style.boxShadow = '';
+                }, 2500);
+            }
+            return false;
+        }
+
         if (!IS_USER_LOGGED_IN) {
             e.preventDefault();
             requireLogin('melakukan pencarian sepatu');

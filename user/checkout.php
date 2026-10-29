@@ -12,9 +12,16 @@ require_once $rootPath . '/config/midtrans.php';
 
 require_user();
 
-$cart = $_SESSION['cart'] ?? [];
-if (empty($cart)) {
-    redirect(base_url('products.php'));
+$isDirect = (isset($_GET['direct']) && !empty($_SESSION['direct_checkout']));
+if ($isDirect) {
+    $cart = [
+        'direct' => $_SESSION['direct_checkout']
+    ];
+} else {
+    $cart = $_SESSION['cart'] ?? [];
+    if (empty($cart)) {
+        redirect(base_url('products.php'));
+    }
 }
 
 $pageTitle = 'Checkout Pesanan Sepatu';
@@ -79,8 +86,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 midtrans_get_snap_token($newOrder, $cart);
             }
 
-            // Clear Cart Session
-            unset($_SESSION['cart']);
+            // Clear Cart Session or Direct Checkout Session
+            if ($isDirect) {
+                unset($_SESSION['direct_checkout']);
+            } else {
+                unset($_SESSION['cart']);
+            }
 
             // Redirect to Order Success Page
             redirect(user_url('order-success.php?invoice=' . urlencode($invoiceNo)));
@@ -149,6 +160,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h1 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.5px;">Checkout & Informasi Pengiriman</h1>
         <p style="color: #64748b; font-size: 0.95rem;">Periksa alamat pengiriman dan pilih ekspedisi kurir untuk pesanan sepatu Anda.</p>
     </div>
+
+    <?php if ($isDirect): ?>
+        <div style="background: #f0fdf4; border: 1.5px solid #86efac; color: #166534; padding: 12px 16px; border-radius: 10px; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; font-size: 0.9rem;">
+            <i class="fa-solid fa-bolt" style="font-size: 1.2rem; color: #16a34a;"></i>
+            <div>
+                <strong>Beli Langsung (Checkout Cepat):</strong> Anda sedang memproses pembelian produk ini secara langsung tanpa mempengaruhi isi keranjang belanja Anda.
+            </div>
+        </div>
+    <?php endif; ?>
 
     <?php if (!empty($error)): ?>
         <div class="alert alert-danger" style="margin-bottom: 24px;"><?= htmlspecialchars($error) ?></div>

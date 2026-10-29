@@ -1,6 +1,6 @@
 <?php
 /**
- * Product Detail Page - QxuanStore
+ * Detail Produk & Pemesanan Sepatu - QxuanStore
  * Modern Shoe E-Commerce
  */
 
@@ -25,57 +25,95 @@ if (!$product) {
     redirect(base_url('products.php'));
 }
 
-$pageTitle = $product->nama_produk;
-require_once __DIR__ . '/includes/header.php';
-
 // Fetch available sizes for this shoe
 $sizes = db_fetch_all("SELECT * FROM tb_produk_size WHERE id_produk = ? AND stok > 0 ORDER BY ukuran ASC", [$id]);
 
-// Store contact for WhatsApp ordering
-$storeContact = get_admin_contact();
-$formattedWa = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $storeContact->admin_telp ?? '6281293066707'));
-
-// Handle Add to Cart submission
+// Handle Form Submission (MUST RUN BEFORE header.php to reflect cart count immediately)
 $cartMsg = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
+$addedSuccessItem = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $actionType = $_POST['action_type'] ?? '';
     $selectedSize = trim($_POST['ukuran'] ?? '');
-    $qty = max(1, (int)($_POST['qty'] ?? 1));
+    $qty = max(1, min(10, (int)($_POST['qty'] ?? 1)));
 
     if (empty($selectedSize)) {
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest' || isset($_POST['ajax'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Silakan pilih ukuran sepatu terlebih dahulu!']);
+            exit;
+        }
         $cartMsg = '<div class="alert alert-danger" style="margin-bottom: 16px;">Silakan pilih ukuran sepatu terlebih dahulu!</div>';
     } else {
-        $cartKey = $id . '_' . $selectedSize;
-        if (!isset($_SESSION['cart'])) {
-            $_SESSION['cart'] = [];
-        }
-
-        if (isset($_SESSION['cart'][$cartKey])) {
-            $_SESSION['cart'][$cartKey]['qty'] += $qty;
-        } else {
-            $_SESSION['cart'][$cartKey] = [
+        if ($actionType === 'buy_now') {
+            // DIRECT CHECKOUT (Tidak memasukkan ke dalam keranjang, langsung ke halaman checkout)
+            $_SESSION['direct_checkout'] = [
                 'id_produk' => $id,
-                'nama' => $product->nama_produk,
-                'harga' => $product->harga_produk,
+                'nama'      => $product->nama_produk,
+                'harga'     => $product->harga_produk,
+                'ukuran'    => $selectedSize,
+                'gambar'    => $product->image_produk,
+                'qty'       => $qty
+            ];
+            redirect(user_url('checkout.php?direct=1'));
+            exit;
+        } elseif ($actionType === 'add_to_cart') {
+            // TAMBAH KE KERANJANG
+            $cartKey = $id . '_' . $selectedSize;
+            if (!isset($_SESSION['cart'])) {
+                $_SESSION['cart'] = [];
+            }
+
+            if (isset($_SESSION['cart'][$cartKey])) {
+                $_SESSION['cart'][$cartKey]['qty'] = min(10, $_SESSION['cart'][$cartKey]['qty'] + $qty);
+            } else {
+                $_SESSION['cart'][$cartKey] = [
+                    'id_produk' => $id,
+                    'nama'      => $product->nama_produk,
+                    'harga'     => $product->harga_produk,
+                    'ukuran'    => $selectedSize,
+                    'gambar'    => $product->image_produk,
+                    'qty'       => $qty
+                ];
+            }
+
+            $totalCartItems = 0;
+            foreach ($_SESSION['cart'] as $c) {
+                $totalCartItems += (int)($c['qty'] ?? 1);
+            }
+
+            // Return JSON if AJAX
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest' || isset($_POST['ajax'])) {
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success'   => true,
+                    'cartCount' => $totalCartItems,
+                    'nama'      => $product->nama_produk,
+                    'ukuran'    => $selectedSize,
+                    'qty'       => $qty
+                ]);
+                exit;
+            }
+
+            $addedSuccessItem = [
+                'nama'   => $product->nama_produk,
                 'ukuran' => $selectedSize,
-                'gambar' => $product->image_produk,
-                'qty' => $qty
+                'qty'    => $qty
             ];
         }
-
-        $cartMsg = '<div class="alert alert-success" style="margin-bottom: 16px; background: #dcfce7; color: #166534; padding: 12px; border-radius: 8px;">
-            <i class="fa-solid fa-circle-check"></i> Sepatu berhasil ditambahkan ke keranjang! 
-            <a href="' . user_url('cart.php') . '" style="color: #2563eb; font-weight: 700; text-decoration: underline; margin-left: 8px;">Lihat Keranjang &rarr;</a>
-        </div>';
     }
 }
+
+$pageTitle = $product->nama_produk;
+require_once __DIR__ . '/includes/header.php';
 ?>
 
-<div class="container" style="padding-top: 36px;">
+<div class="container" style="padding-top: 36px; padding-bottom: 60px;">
     <!-- Breadcrumb -->
-    <div style="font-size: 0.88rem; color: #64748b; margin-bottom: 24px; display: flex; gap: 8px; align-items: center;">
+    <div style="font-size: 0.88rem; color: #64748b; margin-bottom: 24px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
         <a href="<?= base_url('index.php') ?>">Beranda</a>
         <i class="fa-solid fa-chevron-right" style="font-size: 0.7rem;"></i>
-        <a href="<?= base_url('products.php') ?>">Katalog</a>
+        <a href="<?= base_url('products.php') ?>">Katalog Sepatu</a>
         <i class="fa-solid fa-chevron-right" style="font-size: 0.7rem;"></i>
         <a href="<?= base_url('products.php?cat=' . $product->id_category) ?>"><?= htmlspecialchars($product->nama_category ?? 'Kategori') ?></a>
         <i class="fa-solid fa-chevron-right" style="font-size: 0.7rem;"></i>
@@ -98,8 +136,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
             <div class="detail-price"><?= format_rupiah($product->harga_produk) ?></div>
 
             <form action="" method="POST" id="orderForm">
-                <input type="hidden" name="add_to_cart" value="1">
-
                 <!-- Shoe Size Selector -->
                 <div class="size-selector">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -112,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
                     <?php if (!empty($sizes)): ?>
                         <div class="size-options">
                             <?php foreach ($sizes as $idx => $s): ?>
-                                <input type="radio" name="ukuran" id="size_<?= $s->ukuran ?>" value="<?= $s->ukuran ?>" class="size-option-input" <?= $idx === 0 ? 'checked' : '' ?> onchange="updateWaUrl()">
+                                <input type="radio" name="ukuran" id="size_<?= $s->ukuran ?>" value="<?= $s->ukuran ?>" class="size-option-input" <?= $idx === 0 ? 'checked' : '' ?>>
                                 <label for="size_<?= $s->ukuran ?>" class="size-option-label" title="Tersedia <?= $s->stok ?> pasang">
                                     Size <?= htmlspecialchars($s->ukuran) ?>
                                 </label>
@@ -128,20 +164,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
                 <!-- Quantity -->
                 <div style="margin-bottom: 24px;">
                     <label for="qty" style="display: block; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">Jumlah Pasang:</label>
-                    <input type="number" id="qty" name="qty" value="1" min="1" max="10" class="form-control" style="width: 100px; padding: 8px 12px;" onchange="updateWaUrl()">
+                    <input type="number" id="qty" name="qty" value="1" min="1" max="10" class="form-control" style="width: 100px; padding: 8px 12px;">
                 </div>
 
                 <!-- Action Buttons -->
                 <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px;">
-                    <!-- Add to Cart Button -->
-                    <button type="submit" class="btn btn-primary" style="padding: 14px; justify-content: center; font-size: 1rem;">
-                        <i class="fa-solid fa-cart-plus"></i> Tambah ke Keranjang
+                    <!-- Direct Checkout Button -->
+                    <button type="submit" name="action_type" value="buy_now" class="btn" style="background-color: #16a34a; color: #fff; padding: 14px; justify-content: center; font-size: 1rem; border-radius: 10px; font-weight: 700; box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.25);">
+                        <i class="fa-solid fa-bolt"></i> Beli Langsung (Checkout Sekarang)
                     </button>
 
-                    <!-- Direct WhatsApp Buy Button -->
-                    <a id="btnBuyWa" href="#" target="_blank" class="btn" style="background-color: #25d366; color: #fff; padding: 14px; justify-content: center; font-size: 1rem;">
-                        <i class="fa-brands fa-whatsapp"></i> Beli Sekarang via WhatsApp
-                    </a>
+                    <!-- Add to Cart Button -->
+                    <button type="submit" name="action_type" value="add_to_cart" id="btnAddToCart" class="btn btn-primary" style="padding: 14px; justify-content: center; font-size: 1rem; border-radius: 10px; font-weight: 700;">
+                        <i class="fa-solid fa-cart-plus"></i> Tambah ke Keranjang
+                    </button>
                 </div>
             </form>
 
@@ -188,21 +224,112 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
 </div>
 
 <script>
-function updateWaUrl() {
-    const shoeName = "<?= addslashes($product->nama_produk) ?>";
-    const shoePrice = "<?= format_rupiah($product->harga_produk) ?>";
-    const waNumber = "<?= $formattedWa ?>";
-    
-    const sizeSelected = document.querySelector('input[name="ukuran"]:checked');
-    const size = sizeSelected ? sizeSelected.value : '39';
-    const qty = document.getElementById('qty').value || '1';
-    
-    const msg = `Halo Admin QxuanStore, saya tertarik memesan sepatu:\n\n*Nama:* ${shoeName}\n*Ukuran:* Size ${size}\n*Jumlah:* ${qty} pasang\n*Harga Satuan:* ${shoePrice}\n\nApakah stok ukuran ini masih tersedia?`;
-    
-    document.getElementById('btnBuyWa').href = `https://api.whatsapp.com/send?phone=${waNumber}&text=${encodeURIComponent(msg)}`;
+// Helper to update cart badge in header
+function updateHeaderCartBadge(count) {
+    const cartBtn = document.querySelector('.icon-btn.cart-btn');
+    if (!cartBtn) return;
+    let badge = cartBtn.querySelector('.cart-count');
+    if (!badge && count > 0) {
+        badge = document.createElement('span');
+        badge.className = 'cart-count';
+        cartBtn.appendChild(badge);
+    }
+    if (badge) {
+        badge.textContent = count;
+        if (count <= 0) badge.remove();
+    }
 }
-// Initialize on page load
-updateWaUrl();
+
+// Intercept form submission
+let lastClickedAction = 'add_to_cart';
+document.querySelectorAll('#orderForm button[type="submit"]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        lastClickedAction = this.value || 'add_to_cart';
+    });
+});
+
+document.getElementById('orderForm').addEventListener('submit', function(e) {
+    const sizeSelected = document.querySelector('input[name="ukuran"]:checked');
+    if (!sizeSelected) {
+        e.preventDefault();
+        Swal.fire({
+            title: 'Pilih Ukuran Sepatu',
+            text: 'Silakan pilih ukuran (size) sepatu terlebih dahulu.',
+            icon: 'warning',
+            confirmButtonColor: '#2563eb'
+        });
+        return false;
+    }
+
+    if (lastClickedAction === 'add_to_cart') {
+        e.preventDefault();
+        const formData = new FormData(this);
+        formData.append('action_type', 'add_to_cart');
+        formData.append('ajax', '1');
+
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Instantly update badge in header
+                updateHeaderCartBadge(data.cartCount);
+
+                // Show SweetAlert popup with options: Lihat Keranjang & Tutup
+                Swal.fire({
+                    title: 'Berhasil Ditambahkan!',
+                    text: `${data.nama} (Size ${data.ukuran}) berhasil dimasukkan ke keranjang belanja Anda.`,
+                    icon: 'success',
+                    showCancelButton: true,
+                    confirmButtonColor: '#2563eb',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: '<i class="fa-solid fa-cart-shopping"></i> Lihat Keranjang',
+                    cancelButtonText: 'Tutup'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '<?= user_url("cart.php") ?>';
+                    }
+                });
+            } else {
+                Swal.fire('Perhatian', data.message || 'Gagal menambahkan sepatu ke keranjang.', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            // Fallback submit
+            const inputAction = document.createElement('input');
+            inputAction.type = 'hidden';
+            inputAction.name = 'action_type';
+            inputAction.value = 'add_to_cart';
+            this.appendChild(inputAction);
+            this.submit();
+        });
+    }
+});
+
+<?php if (!empty($addedSuccessItem)): ?>
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        title: 'Berhasil Ditambahkan!',
+        text: '<?= addslashes($addedSuccessItem['nama']) ?> (Size <?= addslashes($addedSuccessItem['ukuran']) ?>) berhasil dimasukkan ke keranjang belanja Anda.',
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonColor: '#2563eb',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: '<i class="fa-solid fa-cart-shopping"></i> Lihat Keranjang',
+        cancelButtonText: 'Tutup'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '<?= user_url("cart.php") ?>';
+        }
+    });
+});
+<?php endif; ?>
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

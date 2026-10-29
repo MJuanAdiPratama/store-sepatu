@@ -54,7 +54,7 @@ $orders = db_fetch_all("SELECT * FROM tb_order $where ORDER BY id_order ASC", $p
 
 // Fetch items for each order
 $orderReport = [];
-$totalOmzet = 0;
+$totalPendapatan = 0;
 $totalShoesQty = 0;
 $totalSelesai = 0;
 
@@ -75,7 +75,7 @@ foreach ($orders as $ord) {
 
     if ($ord->status_order === 'Selesai') {
         $totalSelesai++;
-        $totalOmzet += (float)$ord->total_bayar;
+        $totalPendapatan += (float)$ord->total_bayar;
         $totalShoesQty += $orderQty;
     }
 
@@ -429,8 +429,8 @@ $adminName = $currentAdmin->nama_lengkap ?? ($currentAdmin->username ?? 'Adminis
                 <div class="value" style="color: #db2777;"><?= $totalShoesQty ?> Pasang</div>
             </div>
             <div class="kpi-card">
-                <small>Total Omzet Bersih</small>
-                <div class="value" style="color: #2563eb;"><?= format_rupiah($totalOmzet) ?></div>
+                <small>Total Pendapatan</small>
+                <div class="value" style="color: #2563eb;"><?= format_rupiah($totalPendapatan) ?></div>
             </div>
         </div>
 
@@ -497,10 +497,10 @@ $adminName = $currentAdmin->nama_lengkap ?? ($currentAdmin->username ?? 'Adminis
             <tfoot>
                 <tr style="background: #f8fafc; font-size: 0.9rem;">
                     <td colspan="8" class="text-right" style="font-weight: 800; padding: 10px;">
-                        TOTAL OMZET TEREALISASI (STATUS SELESAI):
+                        TOTAL PENDAPATAN (STATUS SELESAI):
                     </td>
                     <td class="text-right" style="font-weight: 800; color: #2563eb; font-size: 1rem; padding: 10px;">
-                        <?= format_rupiah($totalOmzet) ?>
+                        <?= format_rupiah($totalPendapatan) ?>
                     </td>
                 </tr>
             </tfoot>
@@ -526,3 +526,4 @@ $adminName = $currentAdmin->nama_lengkap ?? ($currentAdmin->username ?? 'Adminis
 
 </body>
 </html>
+

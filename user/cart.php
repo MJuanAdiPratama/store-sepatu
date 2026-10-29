@@ -1,6 +1,6 @@
 <?php
 /**
- * Shopping Cart Page - QxuanStore
+ * Keranjang Belanja - QxuanStore
  * Modern Shoe E-Commerce (User Area)
  */
 
@@ -11,8 +11,50 @@ require_once $rootPath . '/config/session.php';
 
 require_user();
 
-$pageTitle = 'Keranjang Belanja';
-require_once $rootPath . '/includes/header.php';
+// Handle AJAX Qty Update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_qty') {
+    header('Content-Type: application/json');
+    $key = trim($_POST['key'] ?? '');
+    $qty = max(1, min(10, (int)($_POST['qty'] ?? 1)));
+
+    if (isset($_SESSION['cart'][$key])) {
+        $_SESSION['cart'][$key]['qty'] = $qty;
+    }
+
+    $itemSubtotal = ($_SESSION['cart'][$key]['harga'] ?? 0) * $qty;
+    $grandTotal = 0;
+    $totalCount = 0;
+    if (!empty($_SESSION['cart'])) {
+        foreach ($_SESSION['cart'] as $it) {
+            $grandTotal += ($it['harga'] * $it['qty']);
+            $totalCount += (int)$it['qty'];
+        }
+    }
+
+    echo json_encode([
+        'success'      => true,
+        'itemSubtotal' => format_rupiah($itemSubtotal),
+        'grandTotal'   => format_rupiah($grandTotal),
+        'cartCount'    => $totalCount
+    ]);
+    exit;
+}
+
+// Handle Direct GET Update Qty
+if (isset($_GET['update_qty'])) {
+    $cartKey = $_GET['key'] ?? '';
+    $newQty  = (int)($_GET['qty'] ?? 1);
+    if (isset($_SESSION['cart'][$cartKey])) {
+        if ($newQty <= 0) {
+            unset($_SESSION['cart'][$cartKey]);
+            set_flash('info', 'Item sepatu berhasil dihapus dari keranjang.');
+        } else {
+            $_SESSION['cart'][$cartKey]['qty'] = min(10, $newQty);
+        }
+    }
+    redirect(user_url('cart.php'));
+    exit;
+}
 
 // Handle Item Removal
 if (isset($_GET['remove'])) {
@@ -21,6 +63,7 @@ if (isset($_GET['remove'])) {
         unset($_SESSION['cart'][$removeKey]);
         set_flash('info', 'Item sepatu berhasil dihapus dari keranjang.');
         redirect(user_url('cart.php'));
+        exit;
     }
 }
 
@@ -29,7 +72,11 @@ if (isset($_GET['clear'])) {
     unset($_SESSION['cart']);
     set_flash('info', 'Keranjang belanja berhasil dikosongkan.');
     redirect(user_url('cart.php'));
+    exit;
 }
+
+$pageTitle = 'Keranjang Belanja';
+require_once $rootPath . '/includes/header.php';
 
 $cart = $_SESSION['cart'] ?? [];
 $totalBayar = 0;
@@ -54,7 +101,7 @@ $totalBayar = 0;
 
     <div style="margin-bottom: 28px;">
         <h1 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.5px;">Keranjang Belanja Sepatu</h1>
-        <p style="color: #64748b; font-size: 0.95rem;">Periksa kembali ukuran dan jumlah sepatu sebelum melanjutkan ke checkout.</p>
+        <p style="color: #64748b; font-size: 0.95rem;">Periksa kembali ukuran dan jumlah pasang sepatu sebelum melanjutkan ke pembayaran.</p>
     </div>
 
     <?php if (!empty($cart)): ?>
@@ -68,7 +115,7 @@ $totalBayar = 0;
                                 <th width="70">Foto</th>
                                 <th>Nama Sepatu & Ukuran</th>
                                 <th>Harga</th>
-                                <th width="80">Qty</th>
+                                <th width="140" style="text-align: center;">Jumlah (Pasang)</th>
                                 <th>Subtotal</th>
                                 <th width="50" style="text-align: right;">Aksi</th>
                             </tr>
@@ -78,8 +125,9 @@ $totalBayar = 0;
                                 <?php 
                                     $subtotal = $item['harga'] * $item['qty'];
                                     $totalBayar += $subtotal;
+                                    $keyHash = md5($key);
                                 ?>
-                                <tr>
+                                <tr id="row_<?= $keyHash ?>">
                                     <td>
                                         <img src="<?= product_image_url($item['gambar']) ?>" alt="<?= htmlspecialchars($item['nama']) ?>" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0;">
                                     </td>
@@ -90,14 +138,25 @@ $totalBayar = 0;
                                         </div>
                                     </td>
                                     <td><?= format_rupiah($item['harga']) ?></td>
-                                    <td>
-                                        <strong style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 0.88rem;"><?= $item['qty'] ?> pcs</strong>
+                                    <td style="text-align: center;">
+                                        <!-- Interactive Quantity Stepper -->
+                                        <div style="display: inline-flex; align-items: center; border: 1.5px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #fff;">
+                                            <button type="button" onclick="modifyQty('<?= htmlspecialchars($key) ?>', -1, '<?= $keyHash ?>')" style="width: 32px; height: 32px; border: none; background: #f8fafc; font-weight: 800; cursor: pointer; color: #334155; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f8fafc'" title="Kurangi 1 pasang">
+                                                -
+                                            </button>
+                                            <span id="qty_val_<?= $keyHash ?>" style="width: 38px; text-align: center; font-weight: 700; font-size: 0.92rem; color: #0f172a;">
+                                                <?= $item['qty'] ?>
+                                            </span>
+                                            <button type="button" onclick="modifyQty('<?= htmlspecialchars($key) ?>', 1, '<?= $keyHash ?>')" style="width: 32px; height: 32px; border: none; background: #f8fafc; font-weight: 800; cursor: pointer; color: #334155; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f8fafc'" title="Tambah 1 pasang">
+                                                +
+                                            </button>
+                                        </div>
                                     </td>
-                                    <td>
+                                    <td id="subtotal_<?= $keyHash ?>">
                                         <strong style="color: #2563eb; font-size: 1rem;"><?= format_rupiah($subtotal) ?></strong>
                                     </td>
                                     <td style="text-align: right;">
-                                        <button type="button" onclick="confirmRemoveCartItem('<?= htmlspecialchars($key) ?>', '<?= addslashes(htmlspecialchars($item['nama'])) ?> (Size <?= htmlspecialchars($item['ukuran']) ?>)')" style="background: none; border: none; color: #ef4444; font-size: 1.15rem; cursor: pointer;" title="Hapus dari keranjang">
+                                        <button type="button" onclick="confirmRemoveCartItem('<?= htmlspecialchars($key) ?>', '<?= addslashes(htmlspecialchars($item['nama'])) ?> (Size <?= htmlspecialchars($item['ukuran']) ?>)')" style="background: none; border: none; color: #ef4444; font-size: 1.15rem; cursor: pointer;" title="Hapus sepatu dari keranjang">
                                             <i class="fa-solid fa-trash-can"></i>
                                         </button>
                                     </td>
@@ -107,7 +166,7 @@ $totalBayar = 0;
                     </table>
                 </div>
 
-                <div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+                <div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 16px; flex-wrap: wrap; gap: 10px;">
                     <a href="<?= base_url('products.php') ?>" style="color: #2563eb; font-weight: 600; font-size: 0.92rem; display: flex; align-items: center; gap: 6px;">
                         <i class="fa-solid fa-arrow-left"></i> Tambah Sepatu Lainnya
                     </a>
@@ -130,10 +189,10 @@ $totalBayar = 0;
 
                 <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 1.1rem; border-top: 1px dashed #e2e8f0; padding-top: 14px;">
                     <span style="font-weight: 700;">Total Tagihan:</span>
-                    <strong style="color: #2563eb; font-size: 1.35rem;"><?= format_rupiah($totalBayar) ?></strong>
+                    <strong id="totalBayarText" style="color: #2563eb; font-size: 1.35rem;"><?= format_rupiah($totalBayar) ?></strong>
                 </div>
 
-                <a href="<?= user_url('checkout.php') ?>" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 1rem; border-radius: 10px;">
+                <a href="<?= user_url('checkout.php') ?>" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 1rem; border-radius: 10px; font-weight: 700;">
                     <i class="fa-solid fa-credit-card"></i> Lanjut ke Checkout
                 </a>
 
@@ -159,6 +218,67 @@ $totalBayar = 0;
 </div>
 
 <script>
+// Interactive Cart Quantity Modifier
+function modifyQty(key, delta, keyHash) {
+    const qtySpan = document.getElementById('qty_val_' + keyHash);
+    if (!qtySpan) return;
+
+    let currentQty = parseInt(qtySpan.textContent.trim(), 10) || 1;
+    let newQty = currentQty + delta;
+
+    if (newQty < 1) {
+        confirmRemoveCartItem(key, 'sepatu ini');
+        return;
+    }
+    if (newQty > 10) {
+        Swal.fire({
+            title: 'Batas Maksimal Pembelian',
+            text: 'Maksimal pembelian untuk satu model dan ukuran sepatu adalah 10 pasang per transaksi.',
+            icon: 'info',
+            confirmButtonColor: '#2563eb'
+        });
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('action', 'update_qty');
+    formData.append('key', key);
+    formData.append('qty', newQty);
+
+    fetch('<?= user_url("cart.php") ?>', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            qtySpan.textContent = newQty;
+            
+            // Update subtotal cell
+            const subtotalEl = document.getElementById('subtotal_' + keyHash);
+            if (subtotalEl) {
+                subtotalEl.innerHTML = `<strong style="color: #2563eb; font-size: 1rem;">${data.itemSubtotal}</strong>`;
+            }
+
+            // Update grand total tagihan
+            const grandTotalEl = document.getElementById('totalBayarText');
+            if (grandTotalEl) {
+                grandTotalEl.textContent = data.grandTotal;
+            }
+
+            // Update cart badge in header
+            const cartCountBadge = document.querySelector('.cart-count');
+            if (cartCountBadge) {
+                cartCountBadge.textContent = data.cartCount;
+            }
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        window.location.href = `<?= user_url("cart.php") ?>?update_qty=1&key=${encodeURIComponent(key)}&qty=${newQty}`;
+    });
+}
+
 function confirmRemoveCartItem(key, itemName) {
     Swal.fire({
         title: 'Hapus dari Keranjang?',

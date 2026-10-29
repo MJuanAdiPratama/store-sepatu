@@ -61,29 +61,17 @@ $orders = db_fetch_all("SELECT * FROM tb_order $where ORDER BY id_order DESC", $
 // Calculate Executive Summary Metrics
 $totalOrders = count($orders);
 $totalSelesai = 0;
-$totalOmzet = 0;
-$orderIds = array_column($orders, 'id_order');
-$totalShoesSold = 0;
+$totalDibatalkan = 0;
 
 foreach ($orders as $ord) {
     if ($ord->status_order === 'Selesai') {
         $totalSelesai++;
-        $totalOmzet += (float)$ord->total_bayar;
+    } elseif ($ord->status_order === 'Dibatalkan') {
+        $totalDibatalkan++;
     }
 }
 
-if (!empty($orderIds)) {
-    $inPlaceholders = implode(',', array_fill(0, count($orderIds), '?'));
-    $qtyRow = db_fetch_one("
-        SELECT COALESCE(SUM(od.qty), 0) AS total_qty 
-        FROM tb_order_detail od 
-        JOIN tb_order o ON od.id_order = o.id_order 
-        WHERE od.id_order IN ($inPlaceholders) AND o.status_order = 'Selesai'
-    ", $orderIds);
-    $totalShoesSold = (int)($qtyRow->total_qty ?? 0);
-}
-
-// Query parameters for export links
+// Query parameters for print report link
 $exportParams = $_GET;
 $exportQuery = http_build_query($exportParams);
 
@@ -99,7 +87,7 @@ if (!empty($selectedMonth) && !empty($selectedYear)) {
 ?>
 
 <!-- Executive Summary Cards -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
     <!-- Metric 1: Total Orders -->
     <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
         <div style="width: 48px; height: 48px; border-radius: 10px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
@@ -120,31 +108,19 @@ if (!empty($selectedMonth) && !empty($selectedYear)) {
         <div>
             <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Pesanan Selesai</div>
             <div style="font-size: 1.5rem; font-weight: 800; color: #16a34a; margin-top: 2px;"><?= number_format($totalSelesai, 0, ',', '.') ?></div>
-            <div style="font-size: 0.75rem; color: #64748b;">Transaksi sukses</div>
+            <div style="font-size: 0.75rem; color: #64748b;">Transaksi sukses diterima</div>
         </div>
     </div>
 
-    <!-- Metric 3: Shoes Sold -->
+    <!-- Metric 3: Cancelled Orders -->
     <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
-        <div style="width: 48px; height: 48px; border-radius: 10px; background: #fdf2f8; color: #db2777; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
-            <i class="fa-solid fa-shoe-prints"></i>
+        <div style="width: 48px; height: 48px; border-radius: 10px; background: #fef2f2; color: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+            <i class="fa-solid fa-ban"></i>
         </div>
         <div>
-            <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Sepatu Terjual</div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: #db2777; margin-top: 2px;"><?= number_format($totalShoesSold, 0, ',', '.') ?> <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">pasang</span></div>
-            <div style="font-size: 0.75rem; color: #64748b;">Dari pesanan selesai</div>
-        </div>
-    </div>
-
-    <!-- Metric 4: Gross Revenue / Omzet -->
-    <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
-        <div style="width: 48px; height: 48px; border-radius: 10px; background: #fefce8; color: #ca8a04; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
-            <i class="fa-solid fa-money-bill-wave"></i>
-        </div>
-        <div>
-            <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Total Omzet (Selesai)</div>
-            <div style="font-size: 1.35rem; font-weight: 800; color: #2563eb; margin-top: 2px;"><?= format_rupiah($totalOmzet) ?></div>
-            <div style="font-size: 0.75rem; color: #64748b;">Pendapatan terealisasi</div>
+            <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Pesanan Dibatalkan</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #ef4444; margin-top: 2px;"><?= number_format($totalDibatalkan, 0, ',', '.') ?></div>
+            <div style="font-size: 0.75rem; color: #64748b;">Transaksi tidak dilanjutkan</div>
         </div>
     </div>
 </div>
@@ -152,17 +128,14 @@ if (!empty($selectedMonth) && !empty($selectedYear)) {
 <div class="card-panel">
     <div class="panel-header" style="flex-wrap: wrap; gap: 12px;">
         <div>
-            <h2><i class="fa-solid fa-cart-shopping" style="color: #2563eb; margin-right: 8px;"></i> Daftar Pesanan & Laporan Penjualan</h2>
-            <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Kelola pesanan pelanggan dan pantau laporan penjualan berkala QxuanStore.</p>
+            <h2><i class="fa-solid fa-cart-shopping" style="color: #2563eb; margin-right: 8px;"></i> Daftar Pesanan Pelanggan</h2>
+            <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Kelola pesanan pelanggan dan cetak laporan penjualan toko QxuanStore.</p>
         </div>
         
-        <!-- Professional Export & Print Action Buttons -->
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <a href="<?= admin_url('orders/report_print.php?' . $exportQuery) ?>" target="_blank" class="btn btn-sm btn-secondary" style="border-radius: 8px; font-weight: 600;" title="Cetak atau Simpan PDF Laporan Bulanan">
-                <i class="fa-solid fa-print"></i> Cetak / PDF Laporan
-            </a>
-            <a href="<?= admin_url('orders/export_excel.php?' . $exportQuery) ?>" class="btn btn-sm" style="background: #16a34a; color: #fff; border-radius: 8px; font-weight: 600;" title="Ekspor Data Laporan ke File Excel (.CSV)">
-                <i class="fa-solid fa-file-excel"></i> Ekspor Excel (.CSV)
+        <!-- Print Action Button -->
+        <div>
+            <a href="<?= admin_url('orders/report_print.php?' . $exportQuery) ?>" target="_blank" class="btn btn-sm btn-secondary" style="border-radius: 8px; font-weight: 600;" title="Cetak atau Simpan PDF Laporan Penjualan">
+                <i class="fa-solid fa-print"></i> Cetak Laporan Penjualan (PDF)
             </a>
         </div>
     </div>
