@@ -75,7 +75,7 @@ if ($order->status_order === 'Dibatalkan') $statusBadgeClass = 'badge-danger';
 
             <!-- Payment Channels Info -->
             <div style="margin-bottom: 24px;">
-                <small style="color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; display: block; margin-bottom: 12px;">Metode Pembayaran Tersedia (Midtrans Snap)</small>
+                <small style="color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; display: block; margin-bottom: 12px;">Metode Pembayaran Tersedia</small>
                 <div style="display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;">
                     <span style="background: #f1f5f9; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 6px;">
                         <i class="fa-solid fa-qrcode" style="color: #ea580c;"></i> QRIS (GoPay/ShopeePay/Dana)
