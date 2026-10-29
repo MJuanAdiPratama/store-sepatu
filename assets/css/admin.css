@@ -594,6 +594,18 @@ textarea.form-control {
     flex: 2 1 200px;
 }
 
+.admin-filter-bar .filter-group-pair {
+    display: flex;
+    gap: 8px;
+    flex: 1 1 240px;
+    min-width: 0;
+}
+
+.admin-filter-bar .filter-group-pair .filter-group {
+    flex: 1 1 auto;
+    width: auto;
+}
+
 .admin-filter-bar .filter-actions {
     display: flex;
     gap: 6px;
@@ -716,6 +728,18 @@ textarea.form-control {
     .admin-filter-bar .filter-group {
         flex: 1 1 100%;
         width: 100%;
+    }
+
+    .admin-filter-bar .filter-group-pair {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        display: flex;
+        gap: 8px;
+    }
+
+    .admin-filter-bar .filter-group-pair .filter-group {
+        width: auto !important;
+        min-width: 0 !important;
     }
 
     /* Modal Image Responsive Scaling */

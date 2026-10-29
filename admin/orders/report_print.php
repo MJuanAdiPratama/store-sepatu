@@ -1,6 +1,6 @@
 <?php
 /**
- * Cetak & Simpan PDF Laporan Penjualan Bulanan
+ * Cetak & Simpan PDF Laporan Penjualan Resmi
  * QxuanStore - Professional Business Reporting
  */
 
@@ -85,7 +85,7 @@ foreach ($orders as $ord) {
 }
 
 // Period Label
-$periodLabel = 'Semua Periode';
+$periodLabel = '';
 if (!empty($selectedMonth) && !empty($selectedYear)) {
     $periodLabel = ($months[$selectedMonth] ?? $selectedMonth) . ' ' . $selectedYear;
 } elseif (!empty($selectedMonth)) {
@@ -94,15 +94,15 @@ if (!empty($selectedMonth) && !empty($selectedYear)) {
     $periodLabel = 'Tahun ' . $selectedYear;
 }
 
-$currentAdmin = current_admin();
-$adminName = $currentAdmin->nama_lengkap ?? ($currentAdmin->username ?? 'Administrator');
+$contact = get_admin_contact();
+$tglCetak = date('d') . ' ' . ($months[date('m')] ?? date('F')) . ' ' . date('Y');
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan_Penjualan_QxuanStore_<?= preg_replace('/[^A-Za-z0-9]/', '_', $periodLabel) ?></title>
+    <title>Laporan_Penjualan_QxuanStore_<?= !empty($periodLabel) ? preg_replace('/[^A-Za-z0-9]/', '_', $periodLabel) : date('Ymd') ?></title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -143,25 +143,28 @@ $adminName = $currentAdmin->nama_lengkap ?? ($currentAdmin->username ?? 'Adminis
             color: #fff;
             padding: 14px 20px;
             border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         .btn-toolbar {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 16px;
+            padding: 9px 18px;
             border-radius: 6px;
             font-size: 0.88rem;
-            font-weight: 600;
+            font-weight: 700;
             text-decoration: none;
             cursor: pointer;
             border: none;
+            transition: all 0.2s ease;
         }
         .btn-print {
-            background: #2563eb;
+            background: #dc2626;
             color: #fff;
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
         }
         .btn-print:hover {
-            background: #1d4ed8;
+            background: #b91c1c;
         }
         .btn-close {
             background: #334155;
@@ -171,107 +174,71 @@ $adminName = $currentAdmin->nama_lengkap ?? ($currentAdmin->username ?? 'Adminis
             background: #475569;
         }
 
-        /* Company Header */
-        .report-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 2.5px solid #0f172a;
-            padding-bottom: 18px;
-            margin-bottom: 24px;
+        /* Kop Surat Resmi Toko */
+        .kop-surat {
+            text-align: center;
+            border-bottom: 3px double #0f172a;
+            padding-bottom: 14px;
+            margin-bottom: 22px;
         }
-        .company-info h1 {
-            font-size: 1.6rem;
+        .kop-surat h1 {
+            font-size: 1.65rem;
             font-weight: 800;
+            letter-spacing: 1.5px;
             color: #0f172a;
-            letter-spacing: -0.5px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
         }
-        .company-info p {
+        .kop-surat .kop-sub {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 3px;
+        }
+        .kop-surat .kop-address {
             font-size: 0.84rem;
-            color: #64748b;
-            margin-top: 3px;
+            color: #475569;
+            margin-bottom: 3px;
             line-height: 1.4;
         }
-        .report-title-box {
-            text-align: right;
+        .kop-surat .kop-contact {
+            font-size: 0.83rem;
+            color: #475569;
         }
-        .report-title-box h2 {
+
+        /* Judul Laporan */
+        .report-heading {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .report-heading h2 {
             font-size: 1.25rem;
             font-weight: 800;
-            color: #2563eb;
+            color: #0f172a;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .report-title-box .badge-period {
-            display: inline-block;
+        .report-heading p {
+            font-size: 0.88rem;
+            color: #475569;
             margin-top: 4px;
-            background: #eff6ff;
-            color: #1e40af;
-            font-size: 0.85rem;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 6px;
-            border: 1px solid #bfdbfe;
-        }
-
-        /* Metadata Grid */
-        .meta-strip {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 14px 18px;
-            margin-bottom: 24px;
-            font-size: 0.84rem;
-        }
-        .meta-strip div span {
-            color: #64748b;
-            font-size: 0.76rem;
-            text-transform: uppercase;
-            display: block;
-            margin-bottom: 2px;
             font-weight: 600;
         }
-        .meta-strip div strong {
-            color: #0f172a;
-            font-size: 0.9rem;
-        }
 
-        /* Executive KPI Summary */
-        .kpi-cards {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
+        /* Table Scroll Wrapper for Mobile */
+        .table-scroll-wrap {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
             margin-bottom: 24px;
         }
-        .kpi-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 12px 14px;
-            background: #fff;
-        }
-        .kpi-card small {
-            font-size: 0.72rem;
-            font-weight: 700;
-            color: #64748b;
-            text-transform: uppercase;
-            display: block;
-        }
-        .kpi-card .value {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: #0f172a;
-            margin-top: 4px;
-        }
 
-        /* Table */
+        /* Report Table */
         table.report-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.82rem;
-            margin-bottom: 24px;
+            min-width: 780px;
         }
         table.report-table th, 
         table.report-table td {
@@ -301,6 +268,7 @@ $adminName = $currentAdmin->nama_lengkap ?? ($currentAdmin->username ?? 'Adminis
             font-weight: 700;
             padding: 2px 7px;
             border-radius: 4px;
+            white-space: nowrap;
         }
         .status-selesai { background: #dcfce7; color: #166534; }
         .status-diproses { background: #e0f2fe; color: #075985; }
@@ -308,52 +276,128 @@ $adminName = $currentAdmin->nama_lengkap ?? ($currentAdmin->username ?? 'Adminis
         .status-menunggu { background: #fef3c7; color: #92400e; }
         .status-batal { background: #fee2e2; color: #991b1b; }
 
-        /* Signature block */
+        /* Signature Section */
         .signature-section {
-            margin-top: 36px;
+            margin-top: 40px;
             display: flex;
             justify-content: space-between;
             page-break-inside: avoid;
         }
         .signature-box {
-            width: 240px;
+            width: 230px;
             text-align: center;
-            font-size: 0.84rem;
+            font-size: 0.85rem;
+        }
+        .sig-title, .sig-date {
+            margin-bottom: 3px;
+            color: #1e293b;
+        }
+        .sig-role {
+            font-weight: 700;
+            color: #0f172a;
         }
         .signature-space {
-            height: 70px;
+            height: 75px;
         }
         .signature-name {
             font-weight: 700;
-            border-top: 1px solid #334155;
-            padding-top: 6px;
             color: #0f172a;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Mobile Breakpoints */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px 8px;
+            }
+            .no-print-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+                padding: 14px;
+            }
+            .no-print-toolbar > div:first-child {
+                text-align: center;
+            }
+            .no-print-toolbar > div:last-child {
+                display: flex;
+                gap: 8px;
+                width: 100%;
+            }
+            .btn-toolbar {
+                flex: 1;
+                justify-content: center;
+                text-align: center;
+                padding: 10px;
+            }
+            .report-page {
+                padding: 20px 14px;
+                border-radius: 8px;
+            }
+            .kop-surat h1 {
+                font-size: 1.35rem;
+            }
+            .signature-section {
+                gap: 12px;
+            }
+            .signature-box {
+                width: 48%;
+                font-size: 0.78rem;
+            }
+            .signature-space {
+                height: 60px;
+            }
+            .signature-name {
+                font-size: 0.82rem;
+            }
         }
 
         /* Print Media Styles */
         @media print {
+            @page {
+                size: auto;
+                margin: 15mm 12mm 15mm 12mm;
+            }
             body {
-                background: #fff;
-                padding: 0;
+                background: #fff !important;
+                padding: 0 !important;
+                color: #000 !important;
             }
             .no-print-toolbar {
                 display: none !important;
             }
             .report-page {
-                border: none;
-                box-shadow: none;
-                padding: 0;
-                width: 100%;
-                max-width: 100%;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+            }
+            .table-scroll-wrap {
+                overflow: visible !important;
+                margin-bottom: 20px;
+            }
+            table.report-table {
+                min-width: 0 !important;
+                width: 100% !important;
             }
             table.report-table th {
                 background: #f1f5f9 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
-            .badge-period, .status-pill, .meta-strip, .kpi-card {
+            table.report-table th, 
+            table.report-table td {
+                border-color: #333 !important;
+            }
+            .status-pill {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+            }
+            .signature-section {
+                page-break-inside: avoid !important;
             }
         }
     </style>
@@ -363,8 +407,8 @@ $adminName = $currentAdmin->nama_lengkap ?? ($currentAdmin->username ?? 'Adminis
     <!-- Non-Print Toolbar -->
     <div class="no-print-toolbar">
         <div>
-            <strong style="font-size: 0.95rem;"><i class="fa-solid fa-file-invoice"></i> Pratinjau Dokumen Laporan Penjualan</strong>
-            <span style="font-size: 0.8rem; color: #94a3b8; margin-left: 8px;">Gunakan 'Cetak / Simpan PDF' untuk mencetak langsung atau simpan file .pdf</span>
+            <strong style="font-size: 0.95rem;"><i class="fa-solid fa-file-pdf"></i> Pratinjau Dokumen Laporan Penjualan</strong>
+            <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 2px;">Gunakan 'Cetak / Simpan PDF' untuk mencetak langsung atau simpan file .pdf</div>
         </div>
         <div style="display: flex; gap: 8px;">
             <button onclick="window.print()" class="btn-toolbar btn-print">
@@ -378,152 +422,111 @@ $adminName = $currentAdmin->nama_lengkap ?? ($currentAdmin->username ?? 'Adminis
 
     <!-- Printable Report Page -->
     <div class="report-page">
-        <!-- Header Usaha -->
-        <div class="report-header">
-            <div class="company-info">
-                <h1>QXUANSTORE INDONESIA</h1>
-                <p>Spesialis Sepatu Original & Fashion Footwear Terlengkap</p>
-                <p>Perum Taman Raya Rajeg Jl. Melati 1, Mekarsari, Kec. Rajeg, Kab. Tangerang, Banten</p>
-                <p>Telp / WhatsApp: +62 822-1081-3446 &bull; Website: www.qxuanstore.com</p>
-            </div>
-            <div class="report-title-box">
-                <h2>Laporan Penjualan</h2>
-                <div class="badge-period">
-                    <i class="fa-solid fa-calendar-days"></i> <?= htmlspecialchars($periodLabel) ?>
-                </div>
-            </div>
+        <!-- Kop Surat Resmi Toko -->
+        <div class="kop-surat">
+            <h1>QXUAN STORE</h1>
+            <p class="kop-sub">Toko Sepatu Sneakers & Casual Original</p>
+            <p class="kop-address"><?= htmlspecialchars($contact->admin_address ?? 'Perum Taman Raya Rajeg Jl. Melati 1, Mekarsari, Kec. Rajeg, Kab. Tangerang, Banten 15540') ?></p>
+            <p class="kop-contact">No. Telp / WhatsApp: <?= htmlspecialchars($contact->admin_telp ?? '082188997766') ?> &bull; Email: <?= htmlspecialchars($contact->admin_email ?? 'support@qxuanstore.com') ?></p>
         </div>
 
-        <!-- Meta Strip -->
-        <div class="meta-strip">
-            <div>
-                <span>Tanggal Dicetak</span>
-                <strong><?= date('d M Y, H:i') ?> WIB</strong>
-            </div>
-            <div>
-                <span>Filter Status</span>
-                <strong><?= !empty($statusFilter) ? htmlspecialchars($statusFilter) : 'Semua Status' ?></strong>
-            </div>
-            <div>
-                <span>Dicetak Oleh</span>
-                <strong><?= htmlspecialchars($adminName) ?></strong>
-            </div>
-            <div>
-                <span>Total Data</span>
-                <strong><?= count($orderReport) ?> Transaksi</strong>
-            </div>
+        <!-- Judul Laporan -->
+        <div class="report-heading">
+            <h2>LAPORAN PENJUALAN</h2>
+            <?php if (!empty($periodLabel)): ?>
+                <p>Periode: <?= htmlspecialchars($periodLabel) ?></p>
+            <?php endif; ?>
         </div>
 
-        <!-- Executive KPI Cards -->
-        <div class="kpi-cards">
-            <div class="kpi-card">
-                <small>Total Transaksi</small>
-                <div class="value"><?= count($orderReport) ?> Pesanan</div>
-            </div>
-            <div class="kpi-card">
-                <small>Pesanan Selesai</small>
-                <div class="value" style="color: #16a34a;"><?= $totalSelesai ?> Pesanan</div>
-            </div>
-            <div class="kpi-card">
-                <small>Sepatu Terjual</small>
-                <div class="value" style="color: #db2777;"><?= $totalShoesQty ?> Pasang</div>
-            </div>
-            <div class="kpi-card">
-                <small>Total Pendapatan</small>
-                <div class="value" style="color: #2563eb;"><?= format_rupiah($totalPendapatan) ?></div>
-            </div>
-        </div>
-
-        <!-- Sales Data Table -->
-        <table class="report-table">
-            <thead>
-                <tr>
-                    <th width="30" class="text-center">No</th>
-                    <th width="110">No. Invoice</th>
-                    <th width="90">Tanggal</th>
-                    <th>Nama Pelanggan</th>
-                    <th>Rincian Produk & Ukuran</th>
-                    <th width="45" class="text-center">Qty</th>
-                    <th width="100">Metode / Kurir</th>
-                    <th width="85" class="text-center">Status</th>
-                    <th width="115" class="text-right">Total (Rp)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (!empty($orderReport)): ?>
-                    <?php 
-                    $no = 1; 
-                    $sumSubtotal = 0;
-                    foreach ($orderReport as $row): 
-                        $statusClass = 'status-menunggu';
-                        if ($row->status_order === 'Diproses') $statusClass = 'status-diproses';
-                        if ($row->status_order === 'Dikirim') $statusClass = 'status-dikirim';
-                        if ($row->status_order === 'Selesai') $statusClass = 'status-selesai';
-                        if ($row->status_order === 'Dibatalkan') $statusClass = 'status-batal';
-                        $sumSubtotal += (float)$row->total_bayar;
-                    ?>
+        <!-- Sales Data Table (Dengan Scroll Wrapper Responsif di Mobile) -->
+        <div class="table-scroll-wrap">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th width="30" class="text-center">No</th>
+                        <th width="110">No. Invoice</th>
+                        <th width="85">Tanggal</th>
+                        <th>Nama Pelanggan</th>
+                        <th>Rincian Produk & Ukuran</th>
+                        <th width="45" class="text-center">Qty</th>
+                        <th width="105">Metode / Kurir</th>
+                        <th width="85" class="text-center">Status</th>
+                        <th width="115" class="text-right">Total (Rp)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($orderReport)): ?>
+                        <?php 
+                        $no = 1; 
+                        foreach ($orderReport as $row): 
+                            $statusClass = 'status-menunggu';
+                            if ($row->status_order === 'Diproses') $statusClass = 'status-diproses';
+                            if ($row->status_order === 'Dikirim') $statusClass = 'status-dikirim';
+                            if ($row->status_order === 'Selesai') $statusClass = 'status-selesai';
+                            if ($row->status_order === 'Dibatalkan') $statusClass = 'status-batal';
+                        ?>
+                            <tr>
+                                <td class="text-center"><?= $no++ ?></td>
+                                <td><strong>#<?= htmlspecialchars($row->invoice_no) ?></strong></td>
+                                <td><?= date('d/m/Y', strtotime($row->created_at)) ?></td>
+                                <td>
+                                    <strong><?= htmlspecialchars($row->nama_penerima) ?></strong><br>
+                                    <small style="color: #64748b;"><?= htmlspecialchars($row->no_hp) ?></small>
+                                </td>
+                                <td><?= htmlspecialchars($row->item_summary) ?></td>
+                                <td class="text-center"><strong><?= $row->total_qty ?></strong></td>
+                                <td>
+                                    <div style="font-size: 0.78rem; font-weight: 600;"><?= htmlspecialchars($row->metode_pembayaran ?: 'QRIS/Transfer') ?></div>
+                                    <div style="font-size: 0.72rem; color: #64748b;"><?= htmlspecialchars($row->kurir ?: 'Ambil Toko') ?></div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="status-pill <?= $statusClass ?>">
+                                        <?= htmlspecialchars($row->status_order) ?>
+                                    </span>
+                                </td>
+                                <td class="text-right" style="font-weight: 700;">
+                                    <?= format_rupiah($row->total_bayar) ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
                         <tr>
-                            <td class="text-center"><?= $no++ ?></td>
-                            <td><strong>#<?= htmlspecialchars($row->invoice_no) ?></strong></td>
-                            <td><?= date('d/m/Y', strtotime($row->created_at)) ?></td>
-                            <td>
-                                <strong><?= htmlspecialchars($row->nama_penerima) ?></strong><br>
-                                <small style="color: #64748b;"><?= htmlspecialchars($row->no_hp) ?></small>
-                            </td>
-                            <td><?= htmlspecialchars($row->item_summary) ?></td>
-                            <td class="text-center"><strong><?= $row->total_qty ?></strong></td>
-                            <td>
-                                <div style="font-size: 0.78rem; font-weight: 600;"><?= htmlspecialchars($row->metode_pembayaran ?: 'QRIS/Transfer') ?></div>
-                                <div style="font-size: 0.72rem; color: #64748b;"><?= htmlspecialchars($row->kurir ?: 'Ambil Toko') ?></div>
-                            </td>
-                            <td class="text-center">
-                                <span class="status-pill <?= $statusClass ?>">
-                                    <?= htmlspecialchars($row->status_order) ?>
-                                </span>
-                            </td>
-                            <td class="text-right" style="font-weight: 700;">
-                                <?= format_rupiah($row->total_bayar) ?>
+                            <td colspan="9" class="text-center" style="padding: 24px; color: #64748b;">
+                                Tidak ada transaksi penjualan pada filter periode yang dipilih.
                             </td>
                         </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="9" class="text-center" style="padding: 24px; color: #64748b;">
-                            Tidak ada transaksi penjualan pada filter periode yang dipilih.
+                    <?php endif; ?>
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f8fafc; font-size: 0.88rem;">
+                        <td colspan="8" class="text-right" style="font-weight: 700; padding: 10px;">
+                            TOTAL PENDAPATAN (STATUS SELESAI):
+                        </td>
+                        <td class="text-right" style="font-weight: 800; color: #0f172a; font-size: 0.95rem; padding: 10px;">
+                            <?= format_rupiah($totalPendapatan) ?>
                         </td>
                     </tr>
-                <?php endif; ?>
-            </tbody>
-            <tfoot>
-                <tr style="background: #f8fafc; font-size: 0.9rem;">
-                    <td colspan="8" class="text-right" style="font-weight: 800; padding: 10px;">
-                        TOTAL PENDAPATAN (STATUS SELESAI):
-                    </td>
-                    <td class="text-right" style="font-weight: 800; color: #2563eb; font-size: 1rem; padding: 10px;">
-                        <?= format_rupiah($totalPendapatan) ?>
-                    </td>
-                </tr>
-            </tfoot>
-        </table>
+                </tfoot>
+            </table>
+        </div>
 
-        <!-- Signatures -->
+        <!-- Section Tanda Tangan Resmi -->
         <div class="signature-section">
             <div class="signature-box">
-                <p>Disiapkan Oleh,</p>
-                <p style="color: #64748b; font-size: 0.78rem;">Admin Operasional</p>
+                <p class="sig-title">Disiapkan Oleh,</p>
+                <p class="sig-role">Admin Operasional</p>
                 <div class="signature-space"></div>
-                <div class="signature-name">( <?= htmlspecialchars($adminName) ?> )</div>
+                <div class="signature-name">( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; )</div>
             </div>
 
             <div class="signature-box">
-                <p>Tangerang, <?= date('d F Y') ?></p>
-                <p style="color: #64748b; font-size: 0.78rem;">Pemilik / Penanggung Jawab Usaha</p>
+                <p class="sig-date">Tangerang, <?= $tglCetak ?></p>
+                <p class="sig-role">Pemilik Usaha / Owner</p>
                 <div class="signature-space"></div>
-                <div class="signature-name">( Manajemen QxuanStore )</div>
+                <div class="signature-name">( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; )</div>
             </div>
         </div>
     </div>
 
 </body>
 </html>
-

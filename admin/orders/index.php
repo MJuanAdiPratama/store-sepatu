@@ -132,10 +132,10 @@ if (!empty($selectedMonth) && !empty($selectedYear)) {
             <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Kelola pesanan pelanggan dan cetak laporan penjualan toko QxuanStore.</p>
         </div>
         
-        <!-- Print Action Button -->
+        <!-- Print Action Button (Warna Merah untuk PDF) -->
         <div>
-            <a href="<?= admin_url('orders/report_print.php?' . $exportQuery) ?>" target="_blank" class="btn btn-sm btn-secondary" style="border-radius: 8px; font-weight: 600;" title="Cetak atau Simpan PDF Laporan Penjualan">
-                <i class="fa-solid fa-print"></i> Cetak Laporan Penjualan (PDF)
+            <a href="<?= admin_url('orders/report_print.php?' . $exportQuery) ?>" target="_blank" class="btn btn-sm" style="background: #ef4444; color: #fff; border: 1px solid #dc2626; border-radius: 8px; font-weight: 700; box-shadow: 0 2px 5px rgba(239, 68, 68, 0.25);" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'" title="Cetak atau Simpan PDF Laporan Penjualan">
+                <i class="fa-solid fa-file-pdf"></i> Cetak Laporan Penjualan (PDF)
             </a>
         </div>
     </div>
@@ -143,26 +143,29 @@ if (!empty($selectedMonth) && !empty($selectedYear)) {
     <!-- Monthly & Yearly Filter Form -->
     <form action="" method="GET" class="admin-filter-bar">
         
-        <!-- Filter Bulan -->
-        <div class="filter-group">
-            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Bulan</label>
-            <select name="month" class="form-control" style="font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">Semua Bulan</option>
-                <?php foreach ($months as $num => $name): ?>
-                    <option value="<?= $num ?>" <?= $selectedMonth === $num ? 'selected' : '' ?>><?= $name ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+        <!-- Filter Bulan & Tahun Berdampingan (Mobile & Desktop) -->
+        <div class="filter-group-pair">
+            <!-- Filter Bulan -->
+            <div class="filter-group" style="flex: 1.3;">
+                <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Bulan</label>
+                <select name="month" class="form-control" style="font-size: 0.85rem;" onchange="this.form.submit()">
+                    <option value="">Semua Bulan</option>
+                    <?php foreach ($months as $num => $name): ?>
+                        <option value="<?= $num ?>" <?= $selectedMonth === $num ? 'selected' : '' ?>><?= $name ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
 
-        <!-- Filter Tahun -->
-        <div class="filter-group filter-sm">
-            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Tahun</label>
-            <select name="year" class="form-control" style="font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="">Semua Tahun</option>
-                <?php foreach ($availableYears as $yr): ?>
-                    <option value="<?= $yr ?>" <?= $selectedYear === (string)$yr ? 'selected' : '' ?>><?= $yr ?></option>
-                <?php endforeach; ?>
-            </select>
+            <!-- Filter Tahun -->
+            <div class="filter-group" style="flex: 1;">
+                <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Tahun</label>
+                <select name="year" class="form-control" style="font-size: 0.85rem;" onchange="this.form.submit()">
+                    <option value="">Semua Tahun</option>
+                    <?php foreach ($availableYears as $yr): ?>
+                        <option value="<?= $yr ?>" <?= $selectedYear === (string)$yr ? 'selected' : '' ?>><?= $yr ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
         </div>
 
         <!-- Filter Status -->
