@@ -1213,3 +1213,77 @@ textarea.form-control {
         padding: 10px 12px;
     }
 }
+
+/* ==========================================================================
+   User Orders Action Buttons (Responsive Mobile & Desktop)
+   ========================================================================== */
+.order-card-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.order-card-actions .btn-group-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.order-card-actions .btn-group-row .btn {
+    border-radius: 8px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.order-card-actions .btn-order-received {
+    background: #16a34a;
+    color: #fff;
+    border-radius: 8px;
+    font-weight: 600;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s ease;
+}
+
+.order-card-actions .btn-order-received:hover {
+    background: #15803d;
+    color: #fff;
+}
+
+@media (max-width: 600px) {
+    .order-card-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        margin-top: 6px;
+    }
+
+    .order-card-actions .btn-group-row {
+        width: 100%;
+        display: flex;
+        gap: 8px;
+    }
+
+    .order-card-actions .btn-group-row .btn {
+        flex: 1;
+        justify-content: center;
+        text-align: center;
+        padding: 9px 12px;
+        font-size: 0.85rem;
+    }
+
+    .order-card-actions .btn-order-received {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        padding: 10px 14px;
+        font-size: 0.88rem;
+    }
+}

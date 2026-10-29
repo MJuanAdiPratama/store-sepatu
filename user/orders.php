@@ -141,33 +141,37 @@ require_once $rootPath . '/includes/header.php';
                                         </div>
                                     <?php endif; ?>
                                 </div>
-                                <div>
+                                <div style="display: flex; justify-content: flex-end;">
                                     <?php if ($ord->status_order === 'Menunggu Pembayaran'): ?>
                                         <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-primary btn-sm" style="border-radius: 8px;">
                                             <i class="fa-solid fa-credit-card"></i> Bayar Sekarang
                                         </a>
                                     <?php elseif ($ord->status_order === 'Dikirim'): ?>
-                                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                            <?php if ($ord->kurir !== 'Ambil di Toko Fisik' && !empty($ord->no_resi)): ?>
-                                                <a href="https://cekresi.com/?noresi=<?= urlencode($ord->no_resi) ?>" target="_blank" class="btn btn-secondary btn-sm" style="border-radius: 8px;" title="Lacak Ekspedisi">
-                                                    <i class="fa-solid fa-truck-fast"></i> Lacak Resi
+                                        <div class="order-card-actions">
+                                            <div class="btn-group-row">
+                                                <?php if ($ord->kurir !== 'Ambil di Toko Fisik' && !empty($ord->no_resi)): ?>
+                                                    <a href="https://cekresi.com/?noresi=<?= urlencode($ord->no_resi) ?>" target="_blank" class="btn btn-secondary btn-sm" title="Lacak Ekspedisi">
+                                                        <i class="fa-solid fa-truck-fast"></i> Lacak Resi
+                                                    </a>
+                                                <?php endif; ?>
+                                                <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-secondary btn-sm">
+                                                    <i class="fa-solid fa-receipt"></i> Detail
                                                 </a>
-                                            <?php endif; ?>
-                                            <button type="button" onclick="confirmOrderReceived('<?= $ord->invoice_no ?>')" class="btn btn-sm" style="background: #16a34a; color: #fff; border-radius: 8px;">
+                                            </div>
+                                            <button type="button" onclick="confirmOrderReceived('<?= $ord->invoice_no ?>')" class="btn btn-sm btn-order-received">
                                                 <i class="fa-solid fa-box-open"></i> <?= $ord->kurir === 'Ambil di Toko Fisik' ? 'Sepatu Sudah Diambil' : 'Pesanan Sudah Diterima' ?>
                                             </button>
-                                            <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
-                                                <i class="fa-solid fa-receipt"></i> Detail
-                                            </a>
                                         </div>
                                     <?php elseif ($ord->status_order === 'Diproses' && $ord->kurir === 'Ambil di Toko Fisik'): ?>
-                                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                            <button type="button" onclick="confirmOrderReceived('<?= $ord->invoice_no ?>')" class="btn btn-sm" style="background: #16a34a; color: #fff; border-radius: 8px;">
+                                        <div class="order-card-actions">
+                                            <div class="btn-group-row">
+                                                <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-secondary btn-sm">
+                                                    <i class="fa-solid fa-receipt"></i> Detail & Bukti
+                                                </a>
+                                            </div>
+                                            <button type="button" onclick="confirmOrderReceived('<?= $ord->invoice_no ?>')" class="btn btn-sm btn-order-received">
                                                 <i class="fa-solid fa-store"></i> Konfirmasi Sudah Ambil di Toko
                                             </button>
-                                            <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
-                                                <i class="fa-solid fa-receipt"></i> Detail & Bukti
-                                            </a>
                                         </div>
                                     <?php else: ?>
                                         <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-secondary btn-sm" style="border-radius: 8px;">

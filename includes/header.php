@@ -76,7 +76,7 @@ if (is_user() && isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
 
                 <!-- Header Actions -->
                 <div class="header-actions">
-                    <!-- Cart Button (Protected for guests) -->
+                    <!-- Cart Button (Hanya tampil jika sudah login) -->
                     <?php if (is_user()): ?>
                         <a href="<?= user_url('cart.php') ?>" class="icon-btn cart-btn">
                             <i class="fa-solid fa-cart-shopping"></i>
@@ -84,11 +84,6 @@ if (is_user() && isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
                             <?php if ($cartCount > 0): ?>
                                 <span class="cart-count"><?= $cartCount ?></span>
                             <?php endif; ?>
-                        </a>
-                    <?php else: ?>
-                        <a href="javascript:void(0)" onclick="requireLogin('Melihat keranjang belanja')" class="icon-btn cart-btn">
-                            <i class="fa-solid fa-cart-shopping"></i>
-                            <span class="action-text">Keranjang</span>
                         </a>
                     <?php endif; ?>
 
@@ -101,7 +96,7 @@ if (is_user() && isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
                     <?php else: ?>
                         <a href="<?= base_url('auth/login.php') ?>" class="icon-btn login-btn">
                             <i class="fa-regular fa-user"></i>
-                            <span>Masuk / Daftar</span>
+                            <span>Masuk</span>
                         </a>
                     <?php endif; ?>
 
