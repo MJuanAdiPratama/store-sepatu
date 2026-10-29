@@ -13,7 +13,16 @@ if (!function_exists('base_url')) {
             (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on')
         );
         $protocol = $isHttps ? "https://" : "http://";
-        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+
+        // Prioritize reverse proxy / tunnel host (Ngrok, Cloudflare Tunnel, etc.)
+        if (!empty($_SERVER['HTTP_X_FORWARDED_HOST'])) {
+            $forwardedHosts = explode(',', $_SERVER['HTTP_X_FORWARDED_HOST']);
+            $host = trim($forwardedHosts[0]);
+        } elseif (!empty($_SERVER['HTTP_HOST'])) {
+            $host = $_SERVER['HTTP_HOST'];
+        } else {
+            $host = 'localhost';
+        }
         
         $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
         $baseFolder = '';
