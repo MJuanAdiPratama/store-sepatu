@@ -21,31 +21,34 @@ if (isset($order->is_read) && $order->is_read == 0) {
     $order->is_read = 1;
 }
 
-// Auto-fill No. Resi if empty
-if (empty($order->no_resi)) {
+$isAmbilToko = ($order->kurir === 'Ambil di Toko Fisik');
+
+// Auto-fill No. Resi if empty and NOT in-store pickup
+if (!$isAmbilToko && empty($order->no_resi)) {
     $autoResi = generate_no_resi($order->kurir ?? 'J&T Express');
     db_execute("UPDATE tb_order SET no_resi = ? WHERE id_order = ?", [$autoResi, $id]);
     $order->no_resi = $autoResi;
 }
 
-// Quick action: Mark as Delivered (Selesai)
+// Quick action: Mark as Delivered / Diambil (Selesai)
 if (isset($_GET['action']) && $_GET['action'] === 'mark_delivered' && $order->status_order !== 'Selesai') {
     $now = date('Y-m-d H:i:s');
     db_execute("UPDATE tb_order SET status_order = 'Selesai', waktu_diterima = ? WHERE id_order = ?", [$now, $id]);
-    set_flash('success', 'Pesanan #' . $order->invoice_no . ' berhasil ditandai SELESAI (Barang telah diterima customer)!');
+    $msgDone = $isAmbilToko ? 'berhasil ditandai SELESAI (Sepatu telah diambil customer di toko)!' : 'berhasil ditandai SELESAI (Barang telah diterima customer)!';
+    set_flash('success', 'Pesanan #' . $order->invoice_no . ' ' . $msgDone);
     redirect(admin_url('orders/detail.php?id=' . $id));
 }
 
 // Handle Status & Resi Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($order->status_order === 'Selesai') {
-        set_flash('error', 'Pesanan ini sudah SELESAI (barang telah diterima customer). Status pesanan sudah final dan dikunci oleh sistem.');
+        set_flash('error', 'Pesanan ini sudah SELESAI (barang telah diterima/diambil customer). Status pesanan sudah final dan dikunci oleh sistem.');
         redirect(admin_url('orders/detail.php?id=' . $id));
     }
 
     $newStatus = trim($_POST['status_order'] ?? $order->status_order);
-    $kurir     = trim($_POST['kurir'] ?? '');
-    $no_resi   = trim($_POST['no_resi'] ?? '');
+    $kurir     = $isAmbilToko ? 'Ambil di Toko Fisik' : trim($_POST['kurir'] ?? '');
+    $no_resi   = $isAmbilToko ? '' : trim($_POST['no_resi'] ?? '');
 
     $waktuDiterima = $order->waktu_diterima;
     if ($newStatus === 'Selesai' && empty($waktuDiterima)) {
@@ -82,16 +85,24 @@ foreach ($items as $it) {
 $shoeText = !empty($itemSummaryList) ? implode(', ', $itemSummaryList) : 'sepatu pesanan Anda';
 
 $waMsg = "Halo Kak *" . $order->nama_penerima . "*,\n\n";
-$waMsg .= "Kami dari Admin *QxuanStore* mengenai pesanan sepatu *" . $shoeText . "* (Invoice: *#" . $order->invoice_no . "*).\n";
-if (!empty($order->kurir)) {
-    $waMsg .= "🚚 Ekspedisi: " . $order->kurir . "\n";
+if ($isAmbilToko) {
+    $waMsg .= "Kami dari Admin *QxuanStore* menginformasikan mengenai pesanan sepatu *" . $shoeText . "* (Invoice: *#" . $order->invoice_no . "*).\n\n";
+    $waMsg .= "Sepatu pesanan Kakak telah siap diambil di *Toko Fisik QxuanStore*:\n";
+    $waMsg .= "📍 *Alamat:* Perum Taman Raya Rajeg Jl. Melati 1, Mekarsari, Kec. Rajeg, Kab. Tangerang\n";
+    $waMsg .= "⏰ *Jam Buka:* Setiap Hari (Senin - Minggu), Pukul 09.00 - 21.00 WIB\n\n";
+    $waMsg .= "Silakan tunjukkan nomor invoice *#" . $order->invoice_no . "* kepada tim kasir kami saat pengambilan sepatu ya Kak. Terima kasih! 🙏👟✨";
+} else {
+    $waMsg .= "Kami dari Admin *QxuanStore* mengenai pesanan sepatu *" . $shoeText . "* (Invoice: *#" . $order->invoice_no . "*).\n";
+    if (!empty($order->kurir)) {
+        $waMsg .= "🚚 Ekspedisi: " . $order->kurir . "\n";
+    }
+    if (!empty($order->no_resi)) {
+        $waMsg .= "📦 No. Resi: " . $order->no_resi . "\n";
+    }
+    $waMsg .= "\nMau menanyakan apakah pesanan sepatu tersebut sudah sampai di alamat Kakak?\n\n";
+    $waMsg .= "Jika sudah sampai dan sesuai, mohon konfirmasinya ya Kak, atau Kakak bisa langsung pilih tombol *\"Pesanan Sudah Diterima\"* di menu riwayat pesanan akun website QxuanStore Kakak.\n\n";
+    $waMsg .= "Terima kasih banyak telah berbelanja di QxuanStore! 🙏👟✨";
 }
-if (!empty($order->no_resi)) {
-    $waMsg .= "📦 No. Resi: " . $order->no_resi . "\n";
-}
-$waMsg .= "\nMau menanyakan apakah pesanan sepatu tersebut sudah sampai di alamat Kakak?\n\n";
-$waMsg .= "Jika sudah sampai dan sesuai, mohon konfirmasinya ya Kak, atau Kakak bisa langsung pilih tombol *\"Pesanan Sudah Diterima\"* di menu riwayat pesanan akun website QxuanStore Kakak.\n\n";
-$waMsg .= "Terima kasih banyak telah berbelanja di QxuanStore! 🙏👟✨";
 
 $customerPhoneClean = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $order->no_hp));
 $waUrl = "https://api.whatsapp.com/send?phone=" . $customerPhoneClean . "&text=" . urlencode($waMsg);
@@ -101,7 +112,7 @@ $s = $order->status_order;
 $isCancelled = ($s === 'Dibatalkan');
 $step1Done = true;
 $step2Done = in_array($s, ['Diproses', 'Dikirim', 'Selesai']);
-$step3Done = in_array($s, ['Dikirim', 'Selesai']);
+$step3Done = $isAmbilToko ? in_array($s, ['Diproses', 'Selesai']) : in_array($s, ['Dikirim', 'Selesai']);
 $step4Done = ($s === 'Selesai');
 
 $badgeClass = 'badge-warning';
@@ -218,36 +229,54 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
             </div>
         </div>
 
-        <!-- Step 3: Pengiriman & Resi -->
-        <div class="stepper-node <?= $step3Done ? ($step4Done ? 'completed' : 'active') : '' ?>">
-            <div class="stepper-title">
-                <i class="fa-solid <?= $step4Done ? 'fa-circle-check' : ($step3Done ? 'fa-truck-fast' : 'fa-circle') ?>"></i>
-                3. Pengiriman Ekspedisi
+        <!-- Step 3: Pengiriman Ekspedisi / Pengambilan Toko -->
+        <?php if ($isAmbilToko): ?>
+            <div class="stepper-node <?= $step3Done ? ($step4Done ? 'completed' : 'active') : '' ?>">
+                <div class="stepper-title">
+                    <i class="fa-solid <?= $step4Done ? 'fa-circle-check' : ($step3Done ? 'fa-store' : 'fa-circle') ?>"></i>
+                    3. Pengambilan Toko
+                </div>
+                <div class="stepper-desc">
+                    <?php if ($step3Done): ?>
+                        <strong style="color: #166534;">Ambil di Toko Fisik</strong><br>
+                        <span>Siap diambil (09.00 - 21.00 WIB)</span>
+                    <?php else: ?>
+                        <span style="color: #64748b;">Belum disiapkan</span><br>
+                        Siapkan stok sepatu di toko
+                    <?php endif; ?>
+                </div>
             </div>
-            <div class="stepper-desc">
-                <?php if ($step3Done): ?>
-                    <strong><?= htmlspecialchars($order->kurir ?: 'Ekspedisi') ?></strong><br>
-                    Resi: <span style="font-family: monospace; color: #2563eb; font-weight: 700;"><?= htmlspecialchars($order->no_resi ?: 'Sedang diproses') ?></span>
-                <?php else: ?>
-                    <span style="color: #64748b;">Belum dikirim</span><br>
-                    Input resi saat packing selesai
-                <?php endif; ?>
+        <?php else: ?>
+            <div class="stepper-node <?= $step3Done ? ($step4Done ? 'completed' : 'active') : '' ?>">
+                <div class="stepper-title">
+                    <i class="fa-solid <?= $step4Done ? 'fa-circle-check' : ($step3Done ? 'fa-truck-fast' : 'fa-circle') ?>"></i>
+                    3. Pengiriman Ekspedisi
+                </div>
+                <div class="stepper-desc">
+                    <?php if ($step3Done): ?>
+                        <strong><?= htmlspecialchars($order->kurir ?: 'Ekspedisi') ?></strong><br>
+                        Resi: <span style="font-family: monospace; color: #2563eb; font-weight: 700;"><?= htmlspecialchars($order->no_resi ?: 'Sedang diproses') ?></span>
+                    <?php else: ?>
+                        <span style="color: #64748b;">Belum dikirim</span><br>
+                        Input resi saat packing selesai
+                    <?php endif; ?>
+                </div>
             </div>
-        </div>
+        <?php endif; ?>
 
-        <!-- Step 4: Konfirmasi Diterima -->
+        <!-- Step 4: Konfirmasi Diterima / Selesai -->
         <div class="stepper-node <?= $step4Done ? 'completed' : '' ?>">
             <div class="stepper-title">
                 <i class="fa-solid <?= $step4Done ? 'fa-circle-check' : 'fa-circle' ?>"></i>
-                4. Pesanan Selesai
+                <?= $isAmbilToko ? '4. Sudah Diambil' : '4. Pesanan Selesai' ?>
             </div>
             <div class="stepper-desc">
                 <?php if ($step4Done): ?>
-                    <span style="color: #166534; font-weight: 600;">Barang Telah Diterima</span><br>
+                    <span style="color: #166534; font-weight: 600;"><?= $isAmbilToko ? 'Sepatu Sudah Diambil' : 'Barang Telah Diterima' ?></span><br>
                     <?= !empty($order->waktu_diterima) ? date('d M Y, H:i', strtotime($order->waktu_diterima)) . ' WIB' : 'Dikonfirmasi Selesai' ?>
                 <?php else: ?>
-                    <span style="color: #64748b;">Menunggu Penerimaan</span><br>
-                    Konfirmasi customer / cek resi
+                    <span style="color: #64748b;"><?= $isAmbilToko ? 'Menunggu Pengambilan' : 'Menunggu Penerimaan' ?></span><br>
+                    <?= $isAmbilToko ? 'Customer belum mengambil di toko' : 'Konfirmasi customer / cek resi' ?>
                 <?php endif; ?>
             </div>
         </div>
@@ -271,17 +300,28 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
             <!-- Customer Detail Grid -->
             <div class="grid-2-col" style="margin-bottom: 24px; background: #f8fafc; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0;">
                 <div>
-                    <small style="color: #64748b; font-weight: 600; text-transform: uppercase;">Penerima Paket</small>
+                    <small style="color: #64748b; font-weight: 600; text-transform: uppercase;">Penerima / Pembeli</small>
                     <p style="font-size: 1.05rem; font-weight: 700; margin-top: 4px; color: #0f172a;"><?= htmlspecialchars($order->nama_penerima) ?></p>
                     <p style="font-size: 0.9rem; margin-top: 6px;">
-                        <a href="<?= $waUrl ?>" target="_blank" style="color: #16a34a; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;" title="Kirim Pesan WhatsApp Tanya Penerimaan">
-                            <i class="fa-brands fa-whatsapp" style="font-size: 1.15rem;"></i> <?= htmlspecialchars($order->no_hp) ?> (Tanya via WhatsApp)
+                        <a href="<?= $waUrl ?>" target="_blank" style="color: #16a34a; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;" title="Hubungi Customer via WhatsApp">
+                            <i class="fa-brands fa-whatsapp" style="font-size: 1.15rem;"></i> <?= htmlspecialchars($order->no_hp) ?> (WhatsApp Customer)
                         </a>
                     </p>
                 </div>
                 <div>
-                    <small style="color: #64748b; font-weight: 600; text-transform: uppercase;">Alamat Pengiriman</small>
-                    <p style="font-size: 0.9rem; margin-top: 4px; line-height: 1.5; color: #334155;"><?= nl2br(htmlspecialchars($order->alamat_pengiriman)) ?></p>
+                    <?php if ($isAmbilToko): ?>
+                        <small style="color: #64748b; font-weight: 600; text-transform: uppercase;">Metode Pengambilan</small>
+                        <p style="font-size: 0.95rem; margin-top: 4px; font-weight: 700; color: #16a34a;">
+                            <i class="fa-solid fa-store"></i> Ambil di Toko Fisik (QxuanStore)
+                        </p>
+                        <div style="background: #e0f2fe; padding: 8px 12px; border-radius: 6px; font-size: 0.82rem; color: #0369a1; margin-top: 6px; line-height: 1.4;">
+                            <div><i class="fa-solid fa-clock"></i> <strong>Jam Buka Toko:</strong> Setiap Hari, 09.00 – 21.00 WIB</div>
+                            <div><i class="fa-solid fa-location-dot"></i> <strong>Alamat:</strong> Perum Taman Raya Rajeg Jl. Melati 1, Kab. Tangerang</div>
+                        </div>
+                    <?php else: ?>
+                        <small style="color: #64748b; font-weight: 600; text-transform: uppercase;">Alamat Pengiriman</small>
+                        <p style="font-size: 0.9rem; margin-top: 4px; line-height: 1.5; color: #334155;"><?= nl2br(htmlspecialchars($order->alamat_pengiriman)) ?></p>
+                    <?php endif; ?>
                     <?php if (!empty($order->catatan)): ?>
                         <small style="color: #64748b; display: block; margin-top: 8px;">Catatan: <em><?= htmlspecialchars($order->catatan) ?></em></small>
                     <?php endif; ?>
@@ -353,15 +393,15 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
                     
                     <?php if (!empty($order->bukti_pembayaran)): ?>
                         <div style="margin-top: 12px; padding: 10px; background: #fff; border: 1px solid #86efac; border-radius: 8px;">
-                            <div style="font-weight: 700; color: #166534; font-size: 0.82rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                                <i class="fa-solid fa-file-invoice-dollar"></i> Lampiran Bukti Pembayaran Customer:
+                            <div style="font-weight: 700; color: #166534; font-size: 0.82rem; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                                <span><i class="fa-solid fa-file-invoice-dollar"></i> Bukti Pembayaran Customer:</span>
                             </div>
-                            <a href="<?= base_url('assets/uploads/bukti/' . htmlspecialchars($order->bukti_pembayaran)) ?>" target="_blank" title="Klik untuk memperbesar foto bukti">
-                                <img src="<?= base_url('assets/uploads/bukti/' . htmlspecialchars($order->bukti_pembayaran)) ?>" alt="Bukti Transfer" style="max-width: 100%; max-height: 180px; object-fit: contain; border-radius: 6px; border: 1px solid #cbd5e1; display: block; background: #f8fafc; padding: 4px;">
-                            </a>
-                            <small style="color: #64748b; font-size: 0.78rem; display: block; margin-top: 6px;">
-                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Klik foto untuk melihat ukuran penuh
-                            </small>
+                            <div style="cursor: pointer;" onclick="showBuktiPopUp('<?= base_url('assets/uploads/bukti/' . htmlspecialchars($order->bukti_pembayaran)) ?>')">
+                                <img src="<?= base_url('assets/uploads/bukti/' . htmlspecialchars($order->bukti_pembayaran)) ?>" alt="Bukti Transfer" style="max-width: 100%; max-height: 180px; object-fit: contain; border-radius: 6px; border: 1px solid #cbd5e1; display: block; background: #f8fafc; padding: 4px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                            </div>
+                            <button type="button" onclick="showBuktiPopUp('<?= base_url('assets/uploads/bukti/' . htmlspecialchars($order->bukti_pembayaran)) ?>')" class="btn btn-secondary btn-sm" style="margin-top: 8px; width: 100%; justify-content: center; font-size: 0.8rem;">
+                                <i class="fa-solid fa-eye"></i> Perbesar Foto Bukti (Pop-up)
+                            </button>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -374,8 +414,8 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
                 </div>
             <?php endif; ?>
 
-            <!-- DELIVERY INTELLIGENCE: CARA ADMIN TAHU BARANG SUDAH DITERIMA ATAU BELUM -->
-            <?php if ($order->status_order === 'Dikirim'): ?>
+            <!-- STATUS INFO CARD -->
+            <?php if ($order->status_order === 'Dikirim' && !$isAmbilToko): ?>
                 <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
                     <div style="font-weight: 800; color: #1e40af; font-size: 0.92rem; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                         <i class="fa-solid fa-location-dot"></i> Paket Sedang Dalam Perjalanan
@@ -402,35 +442,50 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
             <?php elseif ($order->status_order === 'Selesai'): ?>
                 <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
                     <div style="font-weight: 800; color: #166534; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                        <i class="fa-solid fa-circle-check" style="color: #16a34a; font-size: 1.2rem;"></i> Pesanan Selesai (Barang Diterima)
+                        <i class="fa-solid fa-circle-check" style="color: #16a34a; font-size: 1.2rem;"></i> <?= $isAmbilToko ? 'Pesanan Selesai (Sudah Diambil di Toko)' : 'Pesanan Selesai (Barang Diterima)' ?>
                     </div>
                     <p style="font-size: 0.85rem; color: #15803d; line-height: 1.5;">
-                        Barang pesanan telah berhasil sampai dan diterima customer.
+                        <?= $isAmbilToko ? 'Customer telah datang ke toko fisik dan menerima sepatu pesanan.' : 'Barang pesanan telah berhasil sampai dan diterima customer.' ?>
                     </p>
                     <div style="margin-top: 8px; font-size: 0.82rem; color: #166534; padding-top: 8px; border-top: 1px dashed #86efac;">
-                        <strong>Waktu Diterima:</strong> <?= !empty($order->waktu_diterima) ? date('d M Y, H:i', strtotime($order->waktu_diterima)) . ' WIB' : 'Telah diverifikasi selesai' ?>
+                        <strong><?= $isAmbilToko ? 'Waktu Diambil:' : 'Waktu Diterima:' ?></strong> <?= !empty($order->waktu_diterima) ? date('d M Y, H:i', strtotime($order->waktu_diterima)) . ' WIB' : 'Telah diverifikasi selesai' ?>
                     </div>
                 </div>
 
             <?php elseif ($order->status_order === 'Diproses'): ?>
-                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
-                    <div style="font-weight: 800; color: #1e40af; font-size: 0.92rem; display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                        <i class="fa-solid fa-boxes-packing"></i> Siap Dikemas & Dikirim
+                <?php if ($isAmbilToko): ?>
+                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+                        <div style="font-weight: 800; color: #1e40af; font-size: 0.92rem; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                            <i class="fa-solid fa-store"></i> Siapkan Sepatu di Toko Fisik
+                        </div>
+                        <p style="font-size: 0.84rem; color: #334155; line-height: 1.5; margin-bottom: 8px;">
+                            Pembeli memilih metode <strong>Ambil di Toko Fisik</strong> (Perum Taman Raya Rajeg). Silakan siapkan stok sepatu di toko.
+                        </p>
+                        <div style="background: #fff; padding: 10px 12px; border-radius: 8px; border: 1px solid #bfdbfe; font-size: 0.82rem; color: #0369a1; line-height: 1.4;">
+                            <div><i class="fa-solid fa-clock"></i> <strong>Jam Operasional:</strong> Buka Setiap Hari (09.00 – 21.00 WIB)</div>
+                            <div style="margin-top: 4px;">Setelah customer datang dan mengambil barangnya, ubah status pesanan menjadi <strong>Selesai (Sudah Diambil di Toko)</strong>.</div>
+                        </div>
                     </div>
-                    <p style="font-size: 0.84rem; color: #334155; line-height: 1.5;">
-                        Pembayaran sudah masuk. Silakan siapkan produk sepatu sesuai size, packing kardus, serahkan ke kurir, lalu input Nomor Resi di form bawah ini dan ubah status ke <strong>Dikirim</strong>.
-                    </p>
-                </div>
+                <?php else: ?>
+                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+                        <div style="font-weight: 800; color: #1e40af; font-size: 0.92rem; display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <i class="fa-solid fa-boxes-packing"></i> Siap Dikemas & Dikirim
+                        </div>
+                        <p style="font-size: 0.84rem; color: #334155; line-height: 1.5;">
+                            Pembayaran sudah masuk. Silakan siapkan produk sepatu sesuai size, packing kardus, serahkan ke kurir, lalu input Nomor Resi di form bawah ini dan ubah status ke <strong>Dikirim</strong>.
+                        </p>
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
 
             <?php if ($order->status_order === 'Selesai'): ?>
-                <!-- Panel Terkunci Ketika Pesanan Sudah Selesai (Diterima Customer) -->
+                <!-- Panel Terkunci Ketika Pesanan Sudah Selesai -->
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin-top: 10px;">
                     <div style="display: flex; align-items: center; gap: 8px; color: #166534; font-weight: 700; margin-bottom: 8px; font-size: 0.95rem;">
                         <i class="fa-solid fa-lock" style="color: #16a34a;"></i> Status Pesanan Terkunci (Selesai)
                     </div>
                     <p style="font-size: 0.84rem; color: #64748b; line-height: 1.5; margin-bottom: 14px;">
-                        Customer telah mengonfirmasi bahwa pesanan sepatu telah sampai dan diterima dengan baik. Untuk menjaga keaslian data riwayat transaksi, status pesanan ini sudah <strong>final</strong> dan tidak dapat diubah lagi oleh Admin.
+                        <?= $isAmbilToko ? 'Customer telah mengambil sepatu di toko fisik.' : 'Customer telah mengonfirmasi bahwa pesanan sepatu telah sampai dan diterima dengan baik.' ?> Untuk menjaga keaslian data riwayat transaksi, status pesanan ini sudah <strong>final</strong> dan tidak dapat diubah lagi oleh Admin.
                     </p>
                     <div style="background: #fff; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem; line-height: 1.8;">
                         <div style="display: flex; justify-content: space-between;">
@@ -438,19 +493,21 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
                             <span class="badge badge-success"><i class="fa-solid fa-check-circle"></i> Selesai</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 6px; margin-top: 6px;">
-                            <span style="color: #64748b;">Kurir Pengiriman:</span>
-                            <strong><?= htmlspecialchars($order->kurir ?: 'Ekspedisi') ?></strong>
+                            <span style="color: #64748b;">Metode Pengambilan:</span>
+                            <strong><?= htmlspecialchars($order->kurir ?: ($isAmbilToko ? 'Ambil di Toko Fisik' : 'Ekspedisi')) ?></strong>
                         </div>
+                        <?php if (!$isAmbilToko && !empty($order->no_resi)): ?>
+                            <div style="display: flex; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 6px; margin-top: 6px;">
+                                <span style="color: #64748b;">Nomor Resi:</span>
+                                <strong style="color: #2563eb; font-family: monospace;"><?= htmlspecialchars($order->no_resi) ?></strong>
+                            </div>
+                        <?php endif; ?>
                         <div style="display: flex; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 6px; margin-top: 6px;">
-                            <span style="color: #64748b;">Nomor Resi:</span>
-                            <strong style="color: #2563eb; font-family: monospace;"><?= htmlspecialchars($order->no_resi ?: '-') ?></strong>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 6px; margin-top: 6px;">
-                            <span style="color: #64748b;">Waktu Diterima:</span>
+                            <span style="color: #64748b;"><?= $isAmbilToko ? 'Waktu Diambil:' : 'Waktu Diterima:' ?></span>
                             <strong><?= !empty($order->waktu_diterima) ? date('d M Y, H:i', strtotime($order->waktu_diterima)) . ' WIB' : 'Telah diverifikasi' ?></strong>
                         </div>
                     </div>
-                    <?php if (!empty($order->no_resi)): ?>
+                    <?php if (!$isAmbilToko && !empty($order->no_resi)): ?>
                         <a href="https://cekresi.com/?noresi=<?= urlencode($order->no_resi) ?>" target="_blank" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; margin-top: 12px; padding: 10px;">
                             <i class="fa-solid fa-magnifying-glass-location"></i> Cek Riwayat Pelacakan Resi
                         </a>
@@ -459,27 +516,46 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
             <?php else: ?>
                 <!-- Form Edit Status & Resi Manual -->
                 <form action="" method="POST">
-                    <div class="form-group">
-                        <label for="status_order">Ubah Status Pesanan</label>
-                        <select id="status_order" name="status_order" class="form-control" style="font-weight: 600;">
-                            <option value="Menunggu Pembayaran" <?= $order->status_order === 'Menunggu Pembayaran' ? 'selected' : '' ?>>Menunggu Pembayaran</option>
-                            <option value="Diproses" <?= $order->status_order === 'Diproses' ? 'selected' : '' ?>>Diproses (Packing Produk)</option>
-                            <option value="Dikirim" <?= $order->status_order === 'Dikirim' ? 'selected' : '' ?>>Dikirim (Dalam Ekspedisi)</option>
-                            <option value="Selesai" <?= $order->status_order === 'Selesai' ? 'selected' : '' ?>>Selesai (Barang Diterima)</option>
-                            <option value="Dibatalkan" <?= $order->status_order === 'Dibatalkan' ? 'selected' : '' ?>>Dibatalkan</option>
-                        </select>
-                    </div>
+                    <?php if ($isAmbilToko): ?>
+                        <div class="form-group">
+                            <label for="status_order">Ubah Status Pesanan</label>
+                            <select id="status_order" name="status_order" class="form-control" style="font-weight: 600;">
+                                <option value="Menunggu Pembayaran" <?= $order->status_order === 'Menunggu Pembayaran' ? 'selected' : '' ?>>Menunggu Pembayaran</option>
+                                <option value="Diproses" <?= $order->status_order === 'Diproses' ? 'selected' : '' ?>>Diproses (Siapkan Sepatu di Toko)</option>
+                                <option value="Selesai" <?= $order->status_order === 'Selesai' ? 'selected' : '' ?>>Selesai (Sudah Diambil di Toko)</option>
+                                <option value="Dibatalkan" <?= $order->status_order === 'Dibatalkan' ? 'selected' : '' ?>>Dibatalkan</option>
+                            </select>
+                        </div>
+                        <input type="hidden" name="kurir" value="Ambil di Toko Fisik">
+                        <input type="hidden" name="no_resi" value="">
+                        
+                        <div style="background: #f1f5f9; padding: 12px 14px; border-radius: 8px; font-size: 0.84rem; color: #475569; margin-bottom: 14px; line-height: 1.5;">
+                            <i class="fa-solid fa-circle-info" style="color: #2563eb;"></i> <strong>Metode Ambil di Toko Fisik:</strong><br>
+                            Pembeli mengambil langsung ke toko fisik. Opsi status ekspedisi "Dikirim" dan nomor resi ditiadakan.
+                        </div>
+                    <?php else: ?>
+                        <div class="form-group">
+                            <label for="status_order">Ubah Status Pesanan</label>
+                            <select id="status_order" name="status_order" class="form-control" style="font-weight: 600;">
+                                <option value="Menunggu Pembayaran" <?= $order->status_order === 'Menunggu Pembayaran' ? 'selected' : '' ?>>Menunggu Pembayaran</option>
+                                <option value="Diproses" <?= $order->status_order === 'Diproses' ? 'selected' : '' ?>>Diproses (Packing Produk)</option>
+                                <option value="Dikirim" <?= $order->status_order === 'Dikirim' ? 'selected' : '' ?>>Dikirim (Dalam Ekspedisi)</option>
+                                <option value="Selesai" <?= $order->status_order === 'Selesai' ? 'selected' : '' ?>>Selesai (Barang Diterima)</option>
+                                <option value="Dibatalkan" <?= $order->status_order === 'Dibatalkan' ? 'selected' : '' ?>>Dibatalkan</option>
+                            </select>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="kurir">Kurir / Ekspedisi Pengiriman</label>
-                        <input type="text" id="kurir" name="kurir" class="form-control" placeholder="Contoh: JNE / J&T / SiCepat" value="<?= htmlspecialchars($order->kurir ?? '') ?>">
-                    </div>
+                        <div class="form-group">
+                            <label for="kurir">Kurir / Ekspedisi Pengiriman</label>
+                            <input type="text" id="kurir" name="kurir" class="form-control" placeholder="Contoh: JNE / J&T / SiCepat" value="<?= htmlspecialchars($order->kurir ?? '') ?>">
+                        </div>
 
-                    <div class="form-group">
-                        <label for="no_resi">Nomor Resi Pelacakan (Tracking No)</label>
-                        <input type="text" id="no_resi" name="no_resi" class="form-control" placeholder="Masukkan nomor resi ekspedisi..." value="<?= htmlspecialchars($order->no_resi ?? '') ?>">
-                        <small style="color: #64748b; font-size: 0.78rem; margin-top: 4px; display: block;">Nomor resi ini dapat dilacak langsung oleh Admin maupun Customer.</small>
-                    </div>
+                        <div class="form-group">
+                            <label for="no_resi">Nomor Resi Pelacakan (Tracking No)</label>
+                            <input type="text" id="no_resi" name="no_resi" class="form-control" placeholder="Masukkan nomor resi ekspedisi..." value="<?= htmlspecialchars($order->no_resi ?? '') ?>">
+                            <small style="color: #64748b; font-size: 0.78rem; margin-top: 4px; display: block;">Nomor resi ini dapat dilacak langsung oleh Admin maupun Customer.</small>
+                        </div>
+                    <?php endif; ?>
 
                     <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
                         <i class="fa-solid fa-floppy-disk"></i> Simpan Pembaruan Pesanan
@@ -491,6 +567,17 @@ if ($s === 'Dibatalkan') $badgeClass = 'badge-danger';
 </div>
 
 <script>
+function showBuktiPopUp(imgUrl) {
+    Swal.fire({
+        title: 'Bukti Pembayaran Customer',
+        imageUrl: imgUrl,
+        imageAlt: 'Bukti Pembayaran',
+        showConfirmButton: false,
+        showCloseButton: true,
+        width: 'auto'
+    });
+}
+
 function confirmAdminMarkDelivered(orderId, invoiceNo) {
     Swal.fire({
         title: 'Konfirmasi Barang Diterima?',

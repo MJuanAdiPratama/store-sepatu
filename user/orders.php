@@ -112,7 +112,20 @@ require_once $rootPath . '/includes/header.php';
                                 <?php endforeach; ?>
                             </div>
 
-                            <?php if (!empty($ord->no_resi)): ?>
+                            <?php if ($ord->kurir === 'Ambil di Toko Fisik'): ?>
+                                <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; padding: 12px 14px; border-radius: 8px; font-size: 0.85rem; color: #166534; margin-bottom: 14px;">
+                                    <div style="font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; color: #14532d;">
+                                        <i class="fa-solid fa-store" style="color: #16a34a; font-size: 1rem;"></i> Pengambilan: Ambil di Toko Fisik QxuanStore
+                                    </div>
+                                    <div style="font-size: 0.82rem; color: #15803d; line-height: 1.5;">
+                                        <div><i class="fa-solid fa-clock"></i> <strong>Jam Operasional:</strong> Buka Setiap Hari (Senin – Minggu), 09.00 – 21.00 WIB</div>
+                                        <div><i class="fa-solid fa-location-dot"></i> <strong>Alamat Toko:</strong> Perum Taman Raya Rajeg Jl. Melati 1, Mekarsari, Kec. Rajeg, Kab. Tangerang</div>
+                                        <div style="margin-top: 4px; color: #166534; font-weight: 600;">
+                                            Tunjukkan nomor invoice #<?= htmlspecialchars($ord->invoice_no) ?> kepada kasir saat mengambil pesanan.
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php elseif (!empty($ord->no_resi)): ?>
                                 <div style="background: #eff6ff; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; color: #1e40af; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
                                     <i class="fa-solid fa-truck"></i>
                                     <span><strong>No. Resi (<?= htmlspecialchars($ord->kurir) ?>):</strong> <?= htmlspecialchars($ord->no_resi) ?></span>
@@ -135,16 +148,25 @@ require_once $rootPath . '/includes/header.php';
                                         </a>
                                     <?php elseif ($ord->status_order === 'Dikirim'): ?>
                                         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                            <?php if (!empty($ord->no_resi)): ?>
+                                            <?php if ($ord->kurir !== 'Ambil di Toko Fisik' && !empty($ord->no_resi)): ?>
                                                 <a href="https://cekresi.com/?noresi=<?= urlencode($ord->no_resi) ?>" target="_blank" class="btn btn-secondary btn-sm" style="border-radius: 8px;" title="Lacak Ekspedisi">
                                                     <i class="fa-solid fa-truck-fast"></i> Lacak Resi
                                                 </a>
                                             <?php endif; ?>
                                             <button type="button" onclick="confirmOrderReceived('<?= $ord->invoice_no ?>')" class="btn btn-sm" style="background: #16a34a; color: #fff; border-radius: 8px;">
-                                                <i class="fa-solid fa-box-open"></i> Pesanan Sudah Diterima
+                                                <i class="fa-solid fa-box-open"></i> <?= $ord->kurir === 'Ambil di Toko Fisik' ? 'Sepatu Sudah Diambil' : 'Pesanan Sudah Diterima' ?>
                                             </button>
                                             <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
                                                 <i class="fa-solid fa-receipt"></i> Detail
+                                            </a>
+                                        </div>
+                                    <?php elseif ($ord->status_order === 'Diproses' && $ord->kurir === 'Ambil di Toko Fisik'): ?>
+                                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                            <button type="button" onclick="confirmOrderReceived('<?= $ord->invoice_no ?>')" class="btn btn-sm" style="background: #16a34a; color: #fff; border-radius: 8px;">
+                                                <i class="fa-solid fa-store"></i> Konfirmasi Sudah Ambil di Toko
+                                            </button>
+                                            <a href="<?= user_url('order-success.php?invoice=' . urlencode($ord->invoice_no)) ?>" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
+                                                <i class="fa-solid fa-receipt"></i> Detail & Bukti
                                             </a>
                                         </div>
                                     <?php else: ?>

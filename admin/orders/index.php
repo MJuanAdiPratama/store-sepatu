@@ -1,17 +1,48 @@
 <?php
 /**
- * Admin - Kelola Pesanan
+ * Admin - Kelola Pesanan & Laporan Penjualan
  * QxuanStore - Shoe E-Commerce
  */
 
 $pageTitle = 'Manajemen Pesanan';
 require_once dirname(__DIR__) . '/includes/header.php';
 
-$statusFilter = trim($_GET['status'] ?? '');
-$search = trim($_GET['search'] ?? '');
+$selectedMonth = trim($_GET['month'] ?? '');
+$selectedYear  = trim($_GET['year'] ?? '');
+$statusFilter  = trim($_GET['status'] ?? '');
+$search        = trim($_GET['search'] ?? '');
 
+$months = [
+    '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
+    '04' => 'April',   '05' => 'Mei',      '06' => 'Juni',
+    '07' => 'Juli',    '08' => 'Agustus',  '09' => 'September',
+    '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+];
+
+// Get distinct years in database
+$dbYears = db_fetch_all("SELECT DISTINCT YEAR(created_at) AS yr FROM tb_order WHERE created_at IS NOT NULL ORDER BY yr DESC");
+$availableYears = [];
+foreach ($dbYears as $y) {
+    if (!empty($y->yr)) $availableYears[] = (string)$y->yr;
+}
+$currentYear = date('Y');
+if (!in_array($currentYear, $availableYears)) {
+    array_unshift($availableYears, $currentYear);
+}
+
+// Build query
 $where = "WHERE 1=1";
 $params = [];
+
+if (!empty($selectedMonth)) {
+    $where .= " AND MONTH(created_at) = ?";
+    $params[] = (int)$selectedMonth;
+}
+
+if (!empty($selectedYear)) {
+    $where .= " AND YEAR(created_at) = ?";
+    $params[] = (int)$selectedYear;
+}
 
 if (!empty($statusFilter)) {
     $where .= " AND status_order = ?";
@@ -26,34 +57,170 @@ if (!empty($search)) {
 }
 
 $orders = db_fetch_all("SELECT * FROM tb_order $where ORDER BY id_order DESC", $params);
+
+// Calculate Executive Summary Metrics
+$totalOrders = count($orders);
+$totalSelesai = 0;
+$totalOmzet = 0;
+$orderIds = array_column($orders, 'id_order');
+$totalShoesSold = 0;
+
+foreach ($orders as $ord) {
+    if ($ord->status_order === 'Selesai') {
+        $totalSelesai++;
+        $totalOmzet += (float)$ord->total_bayar;
+    }
+}
+
+if (!empty($orderIds)) {
+    $inPlaceholders = implode(',', array_fill(0, count($orderIds), '?'));
+    $qtyRow = db_fetch_one("
+        SELECT COALESCE(SUM(od.qty), 0) AS total_qty 
+        FROM tb_order_detail od 
+        JOIN tb_order o ON od.id_order = o.id_order 
+        WHERE od.id_order IN ($inPlaceholders) AND o.status_order = 'Selesai'
+    ", $orderIds);
+    $totalShoesSold = (int)($qtyRow->total_qty ?? 0);
+}
+
+// Query parameters for export links
+$exportParams = $_GET;
+$exportQuery = http_build_query($exportParams);
+
+// Period description string
+$periodLabel = 'Semua Periode';
+if (!empty($selectedMonth) && !empty($selectedYear)) {
+    $periodLabel = ($months[$selectedMonth] ?? 'Bulan ' . $selectedMonth) . ' ' . $selectedYear;
+} elseif (!empty($selectedMonth)) {
+    $periodLabel = 'Bulan ' . ($months[$selectedMonth] ?? $selectedMonth);
+} elseif (!empty($selectedYear)) {
+    $periodLabel = 'Tahun ' . $selectedYear;
+}
 ?>
 
-<div class="card-panel">
-    <div class="panel-header">
-        <h2><i class="fa-solid fa-cart-shopping" style="color: #2563eb; margin-right: 8px;"></i> Daftar Pesanan Pelanggan</h2>
+<!-- Executive Summary Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <!-- Metric 1: Total Orders -->
+    <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
+        <div style="width: 48px; height: 48px; border-radius: 10px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+            <i class="fa-solid fa-receipt"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Total Transaksi</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-top: 2px;"><?= number_format($totalOrders, 0, ',', '.') ?></div>
+            <div style="font-size: 0.75rem; color: #64748b;"><?= htmlspecialchars($periodLabel) ?></div>
+        </div>
     </div>
 
-    <!-- Filter Form -->
-    <form action="" method="GET" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-        <input type="text" name="search" class="form-control" placeholder="Cari No. Invoice / Nama / No. HP..." value="<?= htmlspecialchars($search) ?>" style="max-width: 300px;">
-        
-        <select name="status" class="form-control" style="max-width: 220px;" onchange="this.form.submit()">
-            <option value="">Semua Status</option>
-            <option value="Menunggu Pembayaran" <?= $statusFilter === 'Menunggu Pembayaran' ? 'selected' : '' ?>>Menunggu Pembayaran</option>
-            <option value="Diproses" <?= $statusFilter === 'Diproses' ? 'selected' : '' ?>>Diproses</option>
-            <option value="Dikirim" <?= $statusFilter === 'Dikirim' ? 'selected' : '' ?>>Dikirim</option>
-            <option value="Selesai" <?= $statusFilter === 'Selesai' ? 'selected' : '' ?>>Selesai</option>
-            <option value="Dibatalkan" <?= $statusFilter === 'Dibatalkan' ? 'selected' : '' ?>>Dibatalkan</option>
-        </select>
+    <!-- Metric 2: Completed Orders -->
+    <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
+        <div style="width: 48px; height: 48px; border-radius: 10px; background: #f0fdf4; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Pesanan Selesai</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #16a34a; margin-top: 2px;"><?= number_format($totalSelesai, 0, ',', '.') ?></div>
+            <div style="font-size: 0.75rem; color: #64748b;">Transaksi sukses</div>
+        </div>
+    </div>
 
-        <button type="submit" class="btn btn-secondary btn-sm">
-            <i class="fa-solid fa-filter"></i> Filter
-        </button>
-        <?php if (!empty($search) || !empty($statusFilter)): ?>
-            <a href="<?= admin_url('orders/index.php') ?>" class="btn btn-sm" style="color: #ef4444;">
-                <i class="fa-solid fa-rotate-left"></i> Reset
+    <!-- Metric 3: Shoes Sold -->
+    <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
+        <div style="width: 48px; height: 48px; border-radius: 10px; background: #fdf2f8; color: #db2777; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+            <i class="fa-solid fa-shoe-prints"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Sepatu Terjual</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #db2777; margin-top: 2px;"><?= number_format($totalShoesSold, 0, ',', '.') ?> <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">pasang</span></div>
+            <div style="font-size: 0.75rem; color: #64748b;">Dari pesanan selesai</div>
+        </div>
+    </div>
+
+    <!-- Metric 4: Gross Revenue / Omzet -->
+    <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
+        <div style="width: 48px; height: 48px; border-radius: 10px; background: #fefce8; color: #ca8a04; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+            <i class="fa-solid fa-money-bill-wave"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Total Omzet (Selesai)</div>
+            <div style="font-size: 1.35rem; font-weight: 800; color: #2563eb; margin-top: 2px;"><?= format_rupiah($totalOmzet) ?></div>
+            <div style="font-size: 0.75rem; color: #64748b;">Pendapatan terealisasi</div>
+        </div>
+    </div>
+</div>
+
+<div class="card-panel">
+    <div class="panel-header" style="flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h2><i class="fa-solid fa-cart-shopping" style="color: #2563eb; margin-right: 8px;"></i> Daftar Pesanan & Laporan Penjualan</h2>
+            <p style="font-size: 0.84rem; color: #64748b; margin-top: 4px;">Kelola pesanan pelanggan dan pantau laporan penjualan berkala QxuanStore.</p>
+        </div>
+        
+        <!-- Professional Export & Print Action Buttons -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <a href="<?= admin_url('orders/report_print.php?' . $exportQuery) ?>" target="_blank" class="btn btn-sm btn-secondary" style="border-radius: 8px; font-weight: 600;" title="Cetak atau Simpan PDF Laporan Bulanan">
+                <i class="fa-solid fa-print"></i> Cetak / PDF Laporan
             </a>
-        <?php endif; ?>
+            <a href="<?= admin_url('orders/export_excel.php?' . $exportQuery) ?>" class="btn btn-sm" style="background: #16a34a; color: #fff; border-radius: 8px; font-weight: 600;" title="Ekspor Data Laporan ke File Excel (.CSV)">
+                <i class="fa-solid fa-file-excel"></i> Ekspor Excel (.CSV)
+            </a>
+        </div>
+    </div>
+
+    <!-- Monthly & Yearly Filter Form -->
+    <form action="" method="GET" style="display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; align-items: center; background: #f8fafc; padding: 14px 16px; border-radius: 10px; border: 1px solid #e2e8f0;">
+        
+        <!-- Filter Bulan -->
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Bulan</label>
+            <select name="month" class="form-control" style="font-size: 0.85rem; min-width: 130px;" onchange="this.form.submit()">
+                <option value="">Semua Bulan</option>
+                <?php foreach ($months as $num => $name): ?>
+                    <option value="<?= $num ?>" <?= $selectedMonth === $num ? 'selected' : '' ?>><?= $name ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <!-- Filter Tahun -->
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Tahun</label>
+            <select name="year" class="form-control" style="font-size: 0.85rem; min-width: 105px;" onchange="this.form.submit()">
+                <option value="">Semua Tahun</option>
+                <?php foreach ($availableYears as $yr): ?>
+                    <option value="<?= $yr ?>" <?= $selectedYear === (string)$yr ? 'selected' : '' ?>><?= $yr ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <!-- Filter Status -->
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Status</label>
+            <select name="status" class="form-control" style="font-size: 0.85rem; min-width: 160px;" onchange="this.form.submit()">
+                <option value="">Semua Status</option>
+                <option value="Menunggu Pembayaran" <?= $statusFilter === 'Menunggu Pembayaran' ? 'selected' : '' ?>>Menunggu Pembayaran</option>
+                <option value="Diproses" <?= $statusFilter === 'Diproses' ? 'selected' : '' ?>>Diproses</option>
+                <option value="Dikirim" <?= $statusFilter === 'Dikirim' ? 'selected' : '' ?>>Dikirim</option>
+                <option value="Selesai" <?= $statusFilter === 'Selesai' ? 'selected' : '' ?>>Selesai</option>
+                <option value="Dibatalkan" <?= $statusFilter === 'Dibatalkan' ? 'selected' : '' ?>>Dibatalkan</option>
+            </select>
+        </div>
+
+        <!-- Search Bar -->
+        <div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1;">
+            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Pencarian</label>
+            <input type="text" name="search" class="form-control" placeholder="Cari No. Invoice / Nama / No. HP..." value="<?= htmlspecialchars($search) ?>" style="font-size: 0.85rem;">
+        </div>
+
+        <div style="display: flex; gap: 6px; align-items: flex-end; margin-top: 19px;">
+            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 9px 14px;">
+                <i class="fa-solid fa-filter"></i> Terapkan
+            </button>
+            <?php if (!empty($search) || !empty($statusFilter) || !empty($selectedMonth) || !empty($selectedYear)): ?>
+                <a href="<?= admin_url('orders/index.php') ?>" class="btn btn-sm" style="color: #ef4444; padding: 9px 12px;" title="Reset Semua Filter">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                </a>
+            <?php endif; ?>
+        </div>
     </form>
 
     <div class="table-responsive">
@@ -64,6 +231,7 @@ $orders = db_fetch_all("SELECT * FROM tb_order $where ORDER BY id_order DESC", $
                     <th>Tanggal</th>
                     <th>Nama Pelanggan</th>
                     <th>No. WhatsApp</th>
+                    <th>Metode / Pengiriman</th>
                     <th>Total Bayar</th>
                     <th>Status Pesanan</th>
                     <th width="120" style="text-align: right;">Aksi</th>
@@ -78,6 +246,7 @@ $orders = db_fetch_all("SELECT * FROM tb_order $where ORDER BY id_order DESC", $
                             if ($ord->status_order === 'Dikirim') $badgeClass = 'badge-primary';
                             if ($ord->status_order === 'Selesai') $badgeClass = 'badge-success';
                             if ($ord->status_order === 'Dibatalkan') $badgeClass = 'badge-danger';
+                            $isAmbilToko = ($ord->kurir === 'Ambil di Toko Fisik');
                         ?>
                         <tr>
                             <td>
@@ -89,24 +258,37 @@ $orders = db_fetch_all("SELECT * FROM tb_order $where ORDER BY id_order DESC", $
                                 <?php endif; ?>
                             </td>
                             <td><?= date('d M Y, H:i', strtotime($ord->created_at)) ?></td>
-                            <td><?= htmlspecialchars($ord->nama_penerima) ?></td>
+                            <td>
+                                <strong><?= htmlspecialchars($ord->nama_penerima) ?></strong>
+                            </td>
                             <td>
                                 <a href="https://api.whatsapp.com/send?phone=<?= preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $ord->no_hp)) ?>" target="_blank" style="color: #16a34a; font-weight: 600;">
                                     <i class="fa-brands fa-whatsapp"></i> <?= htmlspecialchars($ord->no_hp) ?>
                                 </a>
                             </td>
                             <td>
+                                <?php if ($isAmbilToko): ?>
+                                    <span class="badge badge-success" style="font-size: 0.75rem;">
+                                        <i class="fa-solid fa-store"></i> Ambil di Toko
+                                    </span>
+                                <?php else: ?>
+                                    <span style="font-size: 0.82rem; color: #475569;">
+                                        <i class="fa-solid fa-truck" style="color: #2563eb;"></i> <?= htmlspecialchars($ord->kurir ?: 'Ekspedisi') ?>
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
                                 <strong style="color: #2563eb;"><?= format_rupiah($ord->total_bayar) ?></strong>
                             </td>
                             <td>
                                 <span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($ord->status_order) ?></span>
-                                <?php if ($ord->status_order === 'Dikirim' && !empty($ord->no_resi)): ?>
+                                <?php if (!$isAmbilToko && $ord->status_order === 'Dikirim' && !empty($ord->no_resi)): ?>
                                     <div style="font-size: 0.75rem; color: #2563eb; margin-top: 2px;">
                                         Resi: <?= htmlspecialchars($ord->no_resi) ?> (<a href="https://cekresi.com/?noresi=<?= urlencode($ord->no_resi) ?>" target="_blank" style="color: #2563eb; text-decoration: underline;">Lacak</a>)
                                     </div>
                                 <?php elseif ($ord->status_order === 'Selesai' && !empty($ord->waktu_diterima)): ?>
                                     <div style="font-size: 0.75rem; color: #166534; margin-top: 2px;">
-                                        <i class="fa-solid fa-circle-check"></i> Sampai: <?= date('d/m/Y H:i', strtotime($ord->waktu_diterima)) ?>
+                                        <i class="fa-solid fa-circle-check"></i> <?= $isAmbilToko ? 'Diambil:' : 'Sampai:' ?> <?= date('d/m/Y H:i', strtotime($ord->waktu_diterima)) ?>
                                     </div>
                                 <?php endif; ?>
                             </td>
@@ -124,8 +306,9 @@ $orders = db_fetch_all("SELECT * FROM tb_order $where ORDER BY id_order DESC", $
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="7" style="text-align: center; color: #64748b; padding: 32px;">
-                            Belum ada pesanan masuk.
+                        <td colspan="8" style="text-align: center; color: #64748b; padding: 40px;">
+                            <i class="fa-solid fa-folder-open" style="font-size: 2rem; color: #cbd5e1; display: block; margin-bottom: 8px;"></i>
+                            Tidak ada data pesanan pada filter periode yang dipilih.
                         </td>
                     </tr>
                 <?php endif; ?>

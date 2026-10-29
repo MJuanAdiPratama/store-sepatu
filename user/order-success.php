@@ -279,7 +279,7 @@ $qrisImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin
                     <i class="fa-solid fa-shield-halved" style="color: #16a34a; margin-right: 6px;"></i> Konfirmasi Pembayaran Anda
                 </h3>
                 <p style="text-align: center; color: #64748b; font-size: 0.86rem; margin-bottom: 20px;">
-                    Setelah menyelesaikan pembayaran, Anda dapat mengunggah foto bukti transfer atau kirim langsung ke WhatsApp admin:
+                    Setelah menyelesaikan pembayaran, silakan unggah foto bukti transfer atau struk pembayaran Anda di bawah ini:
                 </p>
 
                 <div style="max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px;">
@@ -302,13 +302,8 @@ $qrisImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin
                         </button>
                     </div>
 
-                    <!-- WhatsApp Confirmation Button -->
-                    <a href="<?= $waConfirmUrl ?>" target="_blank" class="btn" style="width: 100%; justify-content: center; padding: 12px 18px; background: #25d366; color: #fff; font-weight: 700; border-radius: 8px; text-decoration: none; font-size: 0.95rem; box-shadow: 0 4px 10px rgba(37,211,102,0.25);">
-                        <i class="fa-brands fa-whatsapp" style="font-size: 1.25rem;"></i> Kirim Bukti ke WhatsApp Admin
-                    </a>
-
                     <!-- Direct Confirmation Button -->
-                    <button type="button" onclick="confirmInstantPayment()" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 10px; border-radius: 8px; font-size: 0.85rem; color: #475569;">
+                    <button type="button" onclick="confirmInstantPayment()" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 11px; border-radius: 8px; font-size: 0.88rem; color: #475569;">
                         <i class="fa-solid fa-circle-check" style="color: #2563eb;"></i> Saya Sudah Selesai Bayar (Konfirmasi Cepat)
                     </button>
                 </div>
@@ -317,54 +312,98 @@ $qrisImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin
         </div>
 
     <?php elseif ($order->status_order === 'Dikirim'): ?>
-        <!-- Card: Pesanan Sedang Dikirim -->
+        <!-- Card: Pesanan Sedang Dikirim / Siap Diambil di Toko -->
         <div style="background: #fff; padding: 36px 30px; border-radius: 16px; border: 1px solid #bfdbfe; text-align: center; margin-bottom: 30px; box-shadow: var(--shadow-sm);">
-            <div style="width: 76px; height: 76px; border-radius: 50%; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; margin: 0 auto 16px;">
-                <i class="fa-solid fa-truck-fast"></i>
-            </div>
-            
-            <span class="badge badge-primary" style="font-size: 0.85rem; padding: 6px 14px; margin-bottom: 8px;">
-                <i class="fa-solid fa-truck-fast"></i> Pesanan Sedang Dikirim
-            </span>
-
-            <h1 style="font-size: 1.85rem; font-weight: 800; color: #0f172a; margin-top: 8px; margin-bottom: 6px;">
-                Sepatu Anda Sedang Dalam Perjalanan!
-            </h1>
-            <p style="color: #64748b; font-size: 0.95rem;">
-                No. Invoice: <strong style="color: #2563eb;">#<?= htmlspecialchars($order->invoice_no) ?></strong>
-            </p>
-
-            <div style="margin: 24px auto; max-width: 520px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; text-align: left;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
-                    <span style="color: #64748b;">Kurir Pengiriman:</span>
-                    <strong style="color: #0f172a;"><?= htmlspecialchars($order->kurir ?: 'Ekspedisi') ?></strong>
+            <?php if ($order->kurir === 'Ambil di Toko Fisik'): ?>
+                <div style="width: 76px; height: 76px; border-radius: 50%; background: #f0fdf4; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; margin: 0 auto 16px;">
+                    <i class="fa-solid fa-store"></i>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
-                    <span style="color: #64748b;">Nomor Resi:</span>
-                    <strong style="color: #2563eb; font-family: monospace; font-size: 1.05rem;"><?= htmlspecialchars($order->no_resi ?: 'Sedang diinput') ?></strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.92rem; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
-                    <span style="color: #64748b;">Status Pembayaran:</span>
-                    <strong style="color: #166534;"><i class="fa-solid fa-circle-check"></i> Lunas via <?= htmlspecialchars($order->metode_pembayaran ?: 'QRIS / Transfer Bank') ?></strong>
-                </div>
-            </div>
+                
+                <span class="badge badge-success" style="font-size: 0.85rem; padding: 6px 14px; margin-bottom: 8px;">
+                    <i class="fa-solid fa-store"></i> Siap Diambil di Toko Fisik
+                </span>
 
-            <!-- Customer Receipt Confirmation CTA -->
-            <div style="max-width: 480px; margin: 0 auto; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 18px; border-radius: 12px; margin-bottom: 12px;">
-                <p style="font-size: 0.88rem; color: #166534; font-weight: 600; margin-bottom: 12px;">
-                    Sudah menerima dan memeriksa sepatu pesanan Anda? Konfirmasikan penerimaan agar transaksi dinyatakan selesai:
+                <h1 style="font-size: 1.85rem; font-weight: 800; color: #0f172a; margin-top: 8px; margin-bottom: 6px;">
+                    Sepatu Anda Siap Diambil di Toko!
+                </h1>
+                <p style="color: #64748b; font-size: 0.95rem;">
+                    No. Invoice: <strong style="color: #2563eb;">#<?= htmlspecialchars($order->invoice_no) ?></strong>
                 </p>
-                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                    <button type="button" onclick="confirmOrderReceived('<?= $order->invoice_no ?>')" class="btn btn-sm" style="background: #16a34a; color: #fff; padding: 10px 18px; font-weight: 700; border-radius: 8px;">
-                        <i class="fa-solid fa-box-open"></i> Pesanan Sudah Saya Terima
-                    </button>
-                    <?php if (!empty($order->no_resi)): ?>
-                        <a href="https://cekresi.com/?noresi=<?= urlencode($order->no_resi) ?>" target="_blank" class="btn btn-secondary btn-sm" style="padding: 10px 16px; border-radius: 8px;">
-                            <i class="fa-solid fa-magnifying-glass-location"></i> Cek Resi Pengiriman
-                        </a>
-                    <?php endif; ?>
+
+                <div style="margin: 24px auto; max-width: 520px; padding: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
+                        <span style="color: #166534;">Metode Pengambilan:</span>
+                        <strong style="color: #14532d;">Ambil di Toko Fisik QxuanStore</strong>
+                    </div>
+                    <div style="margin-bottom: 8px; font-size: 0.92rem; color: #14532d;">
+                        <strong>Jam Operasional:</strong> Buka Setiap Hari (Senin – Minggu), Pukul <strong>09.00 – 21.00 WIB</strong>
+                    </div>
+                    <div style="margin-bottom: 8px; font-size: 0.88rem; color: #334155; line-height: 1.5;">
+                        <i class="fa-solid fa-location-dot" style="color: #ef4444;"></i> <strong>Alamat Toko:</strong> Perum Taman Raya Rajeg Jl. Melati 1, Mekarsari, Kec. Rajeg, Kab. Tangerang.
+                    </div>
+                    <div style="font-size: 0.92rem; padding-top: 8px; border-top: 1px dashed #86efac;">
+                        <span style="color: #166534;">Status Pembayaran:</span>
+                        <strong style="color: #166534;"><i class="fa-solid fa-circle-check"></i> Lunas via <?= htmlspecialchars($order->metode_pembayaran ?: 'QRIS / Transfer Bank') ?></strong>
+                    </div>
                 </div>
-            </div>
+
+                <div style="max-width: 480px; margin: 0 auto; background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 12px; margin-bottom: 12px;">
+                    <p style="font-size: 0.88rem; color: #334155; font-weight: 600; margin-bottom: 12px;">
+                        Sudah datang ke toko dan mengambil sepatu pesanan Anda? Konfirmasikan penerimaan agar transaksi dinyatakan selesai:
+                    </p>
+                    <button type="button" onclick="confirmOrderReceived('<?= $order->invoice_no ?>')" class="btn btn-sm" style="background: #16a34a; color: #fff; padding: 10px 18px; font-weight: 700; border-radius: 8px;">
+                        <i class="fa-solid fa-check-circle"></i> Pesanan Sudah Saya Ambil di Toko
+                    </button>
+                </div>
+            <?php else: ?>
+                <div style="width: 76px; height: 76px; border-radius: 50%; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; margin: 0 auto 16px;">
+                    <i class="fa-solid fa-truck-fast"></i>
+                </div>
+                
+                <span class="badge badge-primary" style="font-size: 0.85rem; padding: 6px 14px; margin-bottom: 8px;">
+                    <i class="fa-solid fa-truck-fast"></i> Pesanan Sedang Dikirim
+                </span>
+
+                <h1 style="font-size: 1.85rem; font-weight: 800; color: #0f172a; margin-top: 8px; margin-bottom: 6px;">
+                    Sepatu Anda Sedang Dalam Perjalanan!
+                </h1>
+                <p style="color: #64748b; font-size: 0.95rem;">
+                    No. Invoice: <strong style="color: #2563eb;">#<?= htmlspecialchars($order->invoice_no) ?></strong>
+                </p>
+
+                <div style="margin: 24px auto; max-width: 520px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
+                        <span style="color: #64748b;">Kurir Pengiriman:</span>
+                        <strong style="color: #0f172a;"><?= htmlspecialchars($order->kurir ?: 'Ekspedisi') ?></strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.92rem;">
+                        <span style="color: #64748b;">Nomor Resi:</span>
+                        <strong style="color: #2563eb; font-family: monospace; font-size: 1.05rem;"><?= htmlspecialchars($order->no_resi ?: 'Sedang diinput') ?></strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.92rem; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
+                        <span style="color: #64748b;">Status Pembayaran:</span>
+                        <strong style="color: #166534;"><i class="fa-solid fa-circle-check"></i> Lunas via <?= htmlspecialchars($order->metode_pembayaran ?: 'QRIS / Transfer Bank') ?></strong>
+                    </div>
+                </div>
+
+                <!-- Customer Receipt Confirmation CTA -->
+                <div style="max-width: 480px; margin: 0 auto; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 18px; border-radius: 12px; margin-bottom: 12px;">
+                    <p style="font-size: 0.88rem; color: #166534; font-weight: 600; margin-bottom: 12px;">
+                        Sudah menerima dan memeriksa sepatu pesanan Anda? Konfirmasikan penerimaan agar transaksi dinyatakan selesai:
+                    </p>
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <button type="button" onclick="confirmOrderReceived('<?= $order->invoice_no ?>')" class="btn btn-sm" style="background: #16a34a; color: #fff; padding: 10px 18px; font-weight: 700; border-radius: 8px;">
+                            <i class="fa-solid fa-box-open"></i> Pesanan Sudah Saya Terima
+                        </button>
+                        <?php if (!empty($order->no_resi)): ?>
+                            <a href="https://cekresi.com/?noresi=<?= urlencode($order->no_resi) ?>" target="_blank" class="btn btn-secondary btn-sm" style="padding: 10px 16px; border-radius: 8px;">
+                                <i class="fa-solid fa-magnifying-glass-location"></i> Cek Resi Pengiriman
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
         </div>
 
     <?php elseif ($order->status_order === 'Selesai'): ?>
@@ -442,20 +481,36 @@ $qrisImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin
                 </div>
 
                 <?php if (!empty($order->bukti_pembayaran)): ?>
-                    <div style="margin-top: 12px; padding: 10px; background: #fff; border: 1px solid #86efac; border-radius: 8px;">
-                        <small style="color: #166534; font-weight: 700; display: block; margin-bottom: 4px;">
-                            <i class="fa-solid fa-file-invoice"></i> Bukti Pembayaran yang Diunggah:
-                        </small>
-                        <a href="<?= base_url('assets/uploads/bukti/' . htmlspecialchars($order->bukti_pembayaran)) ?>" target="_blank" style="color: #2563eb; font-size: 0.85rem; font-weight: 600; text-decoration: underline;">
-                            Lihat Foto Bukti Pembayaran
-                        </a>
+                    <div style="margin-top: 12px; padding: 10px; background: #fff; border: 1px solid #86efac; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <small style="color: #166534; font-weight: 700; display: block;">
+                                <i class="fa-solid fa-file-invoice"></i> Bukti Pembayaran yang Diunggah:
+                            </small>
+                            <span style="font-size: 0.8rem; color: #64748b;"><?= htmlspecialchars($order->bukti_pembayaran) ?></span>
+                        </div>
+                        <button type="button" onclick="showBuktiPopUp('<?= base_url('assets/uploads/bukti/' . htmlspecialchars($order->bukti_pembayaran)) ?>')" class="btn btn-sm btn-secondary" style="border-radius: 6px; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-eye"></i> Lihat Foto Bukti
+                        </button>
                     </div>
                 <?php endif; ?>
             </div>
 
-            <p style="color: #15803d; font-weight: 600; font-size: 0.92rem;">
-                <i class="fa-solid fa-boxes-packing"></i> Toko sedang menyiapkan dan mengemas sepatu Anda untuk segera diserahkan ke kurir ekspedisi.
-            </p>
+            <?php if ($order->kurir === 'Ambil di Toko Fisik'): ?>
+                <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 14px; text-align: left; max-width: 520px; margin: 0 auto 12px;">
+                    <div style="font-weight: 700; color: #1e40af; font-size: 0.95rem; margin-bottom: 4px;">
+                        <i class="fa-solid fa-store"></i> Pengambilan di Toko Fisik QxuanStore
+                    </div>
+                    <div style="font-size: 0.85rem; color: #334155; line-height: 1.5;">
+                        <div><strong>Jam Operasional:</strong> Buka Setiap Hari (Senin – Minggu), 09.00 – 21.00 WIB</div>
+                        <div><strong>Alamat Toko:</strong> Perum Taman Raya Rajeg Jl. Melati 1, Mekarsari, Kec. Rajeg, Kab. Tangerang</div>
+                        <div style="margin-top: 4px; color: #1d4ed8; font-weight: 600;">Silakan datang langsung ke toko dan tunjukkan nomor invoice #<?= htmlspecialchars($order->invoice_no) ?> saat mengambil sepatu.</div>
+                    </div>
+                </div>
+            <?php else: ?>
+                <p style="color: #15803d; font-weight: 600; font-size: 0.92rem;">
+                    <i class="fa-solid fa-boxes-packing"></i> Toko sedang menyiapkan dan mengemas sepatu Anda untuk segera diserahkan ke kurir ekspedisi.
+                </p>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 
@@ -491,13 +546,25 @@ $qrisImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin
             <strong style="color: #2563eb; font-size: 1.35rem;"><?= format_rupiah($order->total_bayar) ?></strong>
         </div>
 
-        <!-- Shipping Destination -->
+        <!-- Shipping Destination / Pickup Info -->
         <div style="margin-top: 24px; padding: 18px; background: #f8fafc; border-radius: 10px; font-size: 0.9rem; line-height: 1.6;">
             <p><strong>Penerima:</strong> <?= htmlspecialchars($order->nama_penerima) ?> (<?= htmlspecialchars($order->no_hp) ?>)</p>
-            <p style="margin-top: 4px;"><strong>Alamat Pengiriman:</strong> <?= nl2br(htmlspecialchars($order->alamat_pengiriman)) ?></p>
-            <p style="margin-top: 4px;"><strong>Kurir Pengiriman:</strong> <?= htmlspecialchars($order->kurir) ?></p>
-            <?php if (!empty($order->no_resi)): ?>
-                <p style="margin-top: 4px; color: #2563eb;"><strong>No. Resi Pelacakan:</strong> <span class="badge badge-info"><?= htmlspecialchars($order->no_resi) ?></span></p>
+            <?php if ($order->kurir === 'Ambil di Toko Fisik'): ?>
+                <p style="margin-top: 4px;"><strong>Metode Pengambilan:</strong> <span class="badge badge-success"><i class="fa-solid fa-store"></i> Ambil di Toko Fisik (Gratis Ongkir)</span></p>
+                <div style="margin-top: 10px; padding: 14px; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 8px;">
+                    <strong style="color: #0369a1; display: block; margin-bottom: 6px;"><i class="fa-solid fa-clock"></i> Informasi Toko Fisik QxuanStore:</strong>
+                    <div style="color: #0c4a6e; font-size: 0.86rem; line-height: 1.5;">
+                        <div><strong>Jam Operasional:</strong> Buka Setiap Hari (Senin – Minggu), Pukul 09.00 – 21.00 WIB</div>
+                        <div><strong>Alamat Toko:</strong> Perum Taman Raya Rajeg Jl. Melati 1, Mekarsari, Kec. Rajeg, Kab. Tangerang</div>
+                        <div style="margin-top: 6px; color: #0284c7; font-weight: 600;">Silakan tunjukkan nomor invoice #<?= htmlspecialchars($order->invoice_no) ?> saat mengambil barang di kasir.</div>
+                    </div>
+                </div>
+            <?php else: ?>
+                <p style="margin-top: 4px;"><strong>Alamat Pengiriman:</strong> <?= nl2br(htmlspecialchars($order->alamat_pengiriman)) ?></p>
+                <p style="margin-top: 4px;"><strong>Kurir Pengiriman:</strong> <?= htmlspecialchars($order->kurir) ?></p>
+                <?php if (!empty($order->no_resi)): ?>
+                    <p style="margin-top: 4px; color: #2563eb;"><strong>No. Resi Pelacakan:</strong> <span class="badge badge-info"><?= htmlspecialchars($order->no_resi) ?></span></p>
+                <?php endif; ?>
             <?php endif; ?>
             <?php if (!empty($order->catatan)): ?>
                 <p style="margin-top: 4px; color: #64748b;"><strong>Catatan:</strong> <?= htmlspecialchars($order->catatan) ?></p>
@@ -782,6 +849,18 @@ function confirmOrderReceived(invoiceNo) {
                 Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
             });
         }
+    });
+}
+
+// Pop-up Lightbox for Bukti Pembayaran
+function showBuktiPopUp(imgUrl) {
+    Swal.fire({
+        title: 'Foto Bukti Pembayaran',
+        imageUrl: imgUrl,
+        imageAlt: 'Bukti Pembayaran',
+        showConfirmButton: false,
+        showCloseButton: true,
+        width: 'auto'
     });
 }
 </script>
