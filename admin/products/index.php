@@ -43,26 +43,32 @@ $allCategories = db_fetch_all("SELECT * FROM tb_category ORDER BY nama_category 
     </div>
 
     <!-- Search & Filter Bar -->
-    <form action="" method="GET" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-        <input type="text" name="search" class="form-control" placeholder="Cari nama sepatu..." value="<?= htmlspecialchars($search) ?>" style="max-width: 280px;">
+    <form action="" method="GET" class="admin-filter-bar" style="align-items: center;">
+        <div class="filter-group filter-search" style="margin: 0;">
+            <input type="text" name="search" class="form-control" placeholder="Cari nama sepatu..." value="<?= htmlspecialchars($search) ?>" style="font-size: 0.85rem;">
+        </div>
         
-        <select name="cat" class="form-control" style="max-width: 220px;" onchange="this.form.submit()">
-            <option value="">Semua Kategori</option>
-            <?php foreach ($allCategories as $cat): ?>
-                <option value="<?= $cat->id_category ?>" <?= $categoryFilter == $cat->id_category ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($cat->nama_category) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
+        <div class="filter-group" style="margin: 0;">
+            <select name="cat" class="form-control" style="font-size: 0.85rem;" onchange="this.form.submit()">
+                <option value="">Semua Kategori</option>
+                <?php foreach ($allCategories as $cat): ?>
+                    <option value="<?= $cat->id_category ?>" <?= $categoryFilter == $cat->id_category ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($cat->nama_category) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
 
-        <button type="submit" class="btn btn-secondary btn-sm">
-            <i class="fa-solid fa-magnifying-glass"></i> Filter
-        </button>
-        <?php if (!empty($search) || $categoryFilter > 0): ?>
-            <a href="<?= admin_url('products/index.php') ?>" class="btn btn-sm" style="color: #ef4444;">
-                <i class="fa-solid fa-rotate-left"></i> Reset
-            </a>
-        <?php endif; ?>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 9px 14px;">
+                <i class="fa-solid fa-magnifying-glass"></i> Filter
+            </button>
+            <?php if (!empty($search) || $categoryFilter > 0): ?>
+                <a href="<?= admin_url('products/index.php') ?>" class="btn btn-sm" style="color: #ef4444; padding: 9px 12px;">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                </a>
+            <?php endif; ?>
+        </div>
     </form>
 
     <div class="table-responsive">

@@ -87,7 +87,7 @@ if (!empty($selectedMonth) && !empty($selectedYear)) {
 ?>
 
 <!-- Executive Summary Cards -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+<div class="stats-grid" style="margin-bottom: 24px;">
     <!-- Metric 1: Total Orders -->
     <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
         <div style="width: 48px; height: 48px; border-radius: 10px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
@@ -141,11 +141,11 @@ if (!empty($selectedMonth) && !empty($selectedYear)) {
     </div>
 
     <!-- Monthly & Yearly Filter Form -->
-    <form action="" method="GET" style="display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; align-items: flex-end; background: #f8fafc; padding: 14px 16px; border-radius: 10px; border: 1px solid #e2e8f0;">
+    <form action="" method="GET" class="admin-filter-bar">
         
         <!-- Filter Bulan -->
-        <div style="flex: 1 1 120px; max-width: 150px;">
-            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase; display: block; margin-bottom: 4px;">Bulan</label>
+        <div class="filter-group">
+            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Bulan</label>
             <select name="month" class="form-control" style="font-size: 0.85rem;" onchange="this.form.submit()">
                 <option value="">Semua Bulan</option>
                 <?php foreach ($months as $num => $name): ?>
@@ -155,8 +155,8 @@ if (!empty($selectedMonth) && !empty($selectedYear)) {
         </div>
 
         <!-- Filter Tahun -->
-        <div style="flex: 1 1 95px; max-width: 110px;">
-            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase; display: block; margin-bottom: 4px;">Tahun</label>
+        <div class="filter-group filter-sm">
+            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Tahun</label>
             <select name="year" class="form-control" style="font-size: 0.85rem;" onchange="this.form.submit()">
                 <option value="">Semua Tahun</option>
                 <?php foreach ($availableYears as $yr): ?>
@@ -166,8 +166,8 @@ if (!empty($selectedMonth) && !empty($selectedYear)) {
         </div>
 
         <!-- Filter Status -->
-        <div style="flex: 1 1 140px; max-width: 170px;">
-            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase; display: block; margin-bottom: 4px;">Status</label>
+        <div class="filter-group">
+            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Status</label>
             <select name="status" class="form-control" style="font-size: 0.85rem;" onchange="this.form.submit()">
                 <option value="">Semua Status</option>
                 <option value="Menunggu Pembayaran" <?= $statusFilter === 'Menunggu Pembayaran' ? 'selected' : '' ?>>Menunggu Pembayaran</option>
@@ -179,12 +179,12 @@ if (!empty($selectedMonth) && !empty($selectedYear)) {
         </div>
 
         <!-- Search Bar -->
-        <div style="flex: 2 1 180px; min-width: 0;">
-            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase; display: block; margin-bottom: 4px;">Pencarian</label>
+        <div class="filter-group filter-search">
+            <label style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">Pencarian</label>
             <input type="text" name="search" class="form-control" placeholder="Cari No. Invoice / Nama / WhatsApp..." value="<?= htmlspecialchars($search) ?>" style="font-size: 0.85rem; width: 100%;">
         </div>
 
-        <div style="display: flex; gap: 6px;">
+        <div class="filter-actions">
             <button type="submit" class="btn btn-secondary btn-sm" style="padding: 9px 14px; white-space: nowrap;">
                 <i class="fa-solid fa-filter"></i> Terapkan
             </button>

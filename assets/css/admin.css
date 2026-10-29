@@ -125,14 +125,22 @@ body {
 
 /* Main Content Area */
 .admin-main {
-    margin-left: var(--sidebar-width);
     flex-grow: 1;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     min-width: 0;
-    max-width: calc(100% - var(--sidebar-width));
-    width: calc(100% - var(--sidebar-width));
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+@media (min-width: 901px) {
+    .admin-main {
+        margin-left: var(--sidebar-width);
+        width: calc(100% - var(--sidebar-width));
+        max-width: calc(100% - var(--sidebar-width));
+    }
 }
 
 .admin-topbar {
@@ -556,6 +564,43 @@ textarea.form-control {
 }
 
 /* ==========================================================================
+   Admin Filter & Search Bars (Responsive)
+   ========================================================================== */
+.admin-filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    background: #f8fafc;
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+
+.admin-filter-bar .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 130px;
+    min-width: 0;
+}
+
+.admin-filter-bar .filter-group.filter-sm {
+    flex: 0 1 110px;
+}
+
+.admin-filter-bar .filter-group.filter-search {
+    flex: 2 1 200px;
+}
+
+.admin-filter-bar .filter-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+/* ==========================================================================
    Admin Responsive Breakpoints (Mobile, Tablet, Laptop)
    ========================================================================== */
 @media (max-width: 900px) {
@@ -578,7 +623,8 @@ textarea.form-control {
 
     .admin-main {
         margin-left: 0 !important;
-        width: 100%;
+        width: 100% !important;
+        max-width: 100% !important;
     }
 
     .stats-grid {
@@ -591,20 +637,53 @@ textarea.form-control {
         grid-template-columns: 1fr;
         gap: 20px;
     }
+
+    .admin-filter-bar {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .admin-filter-bar .filter-group {
+        flex: 1 1 calc(50% - 6px);
+    }
+
+    .admin-filter-bar .filter-group.filter-search {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .admin-filter-bar .filter-actions {
+        width: 100%;
+        display: flex;
+    }
+
+    .admin-filter-bar .filter-actions .btn {
+        flex: 1;
+        justify-content: center;
+        text-align: center;
+    }
 }
 
 @media (max-width: 600px) {
     .admin-body {
-        padding: 16px;
+        padding: 16px 12px;
     }
 
     .admin-topbar {
-        padding: 0 16px;
-        height: 60px;
+        padding: 0 14px;
+        height: 58px;
     }
 
     .topbar-title h1 {
-        font-size: 1.05rem;
+        font-size: 1.02rem;
+        max-width: 180px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .admin-profile-badge span {
+        display: none;
     }
 
     .stats-grid,
@@ -615,11 +694,39 @@ textarea.form-control {
 
     .panel-header {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
         gap: 12px;
     }
 
+    .panel-header > div,
+    .panel-header .btn {
+        width: 100%;
+    }
+
+    .panel-header .btn {
+        justify-content: center;
+    }
+
     .card-panel {
-        padding: 16px;
+        padding: 16px 14px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .admin-filter-bar .filter-group {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    /* Modal Image Responsive Scaling */
+    .swal2-popup {
+        width: 92vw !important;
+        padding: 16px !important;
+    }
+
+    .swal2-image {
+        max-width: 100% !important;
+        max-height: 60vh !important;
+        object-fit: contain !important;
     }
 }
