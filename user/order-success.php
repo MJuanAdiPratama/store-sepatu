@@ -135,7 +135,7 @@ $qrisImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin
                     </div>
 
                     <div class="qris-body">
-                        <div style="font-weight: 800; font-size: 1rem; color: #0f172a; margin-bottom: 2px;">QXUANSTORE SHOES</div>
+                        <div style="font-weight: 800; font-size: 1rem; color: #0f172a; margin-bottom: 2px;">QXUANSTORE</div>
                         <small style="color: #64748b; font-size: 0.78rem; display: block; margin-bottom: 12px;">NMID: ID1026102800192 &bull; A01</small>
 
                         <div class="qris-img-container">
@@ -161,7 +161,7 @@ $qrisImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin
                         <li>Buka aplikasi <strong>BCA Mobile, Livin' Mandiri, GoPay, OVO, DANA, ShopeePay</strong>, atau e-wallet/m-banking lainnya.</li>
                         <li>Pilih menu <strong>Scan QR / Bayar QRIS</strong>.</li>
                         <li>Arahkan kamera HP ke barcode QRIS di atas.</li>
-                        <li>Pastikan nama merchant adalah <strong>QXUANSTORE SHOES</strong> dan nominal tagihan sesuai (<?= format_rupiah($order->total_bayar) ?>).</li>
+                        <li>Pastikan nama merchant adalah <strong>QXUANSTORE</strong> dan nominal tagihan sesuai (<?= format_rupiah($order->total_bayar) ?>).</li>
                         <li>Selesaikan pembayaran dan simpan bukti transaksi Anda.</li>
                     </ol>
                 </div>
@@ -260,7 +260,7 @@ $qrisImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin
 
                     <!-- Transfer Amount -->
                     <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; text-align: center;">
-                        <span style="font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 4px;">Nominal yang Harus Ditransfer (Presisi):</span>
+                        <span style="font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 4px;">Nominal yang Harus Ditransfer:</span>
                         <div style="font-size: 1.4rem; font-weight: 800; color: #2563eb; margin-bottom: 8px;">
                             <?= format_rupiah($order->total_bayar) ?>
                         </div>
